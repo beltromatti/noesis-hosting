@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { listSitesForUser } from "@/lib/sites";
 import { env } from "@/lib/env";
+import { checkDomainARecord } from "@/lib/dns";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import { LogoutButton } from "@/components/auth/logout-button";
 
@@ -16,6 +17,21 @@ export default async function DashboardPage() {
   }
 
   const sites = await listSitesForUser(session.userId);
+
+  const uniqueHostnames = Array.from(
+    new Set(
+      sites.flatMap((site) => site.domains.map((domain) => domain.hostname.toLowerCase())),
+    ),
+  );
+
+  const dnsPairs = await Promise.all(
+    uniqueHostnames.map(async (hostname) => {
+      const result = await checkDomainARecord(hostname);
+      return [hostname, result] as const;
+    }),
+  );
+
+  const dnsByHostname = new Map(dnsPairs);
 
   const serializedSites = sites.map((site) => ({
     id: site.id,
@@ -33,6 +49,7 @@ export default async function DashboardPage() {
       verificationStatus: domain.verificationStatus,
       type: domain.type,
       createdAt: domain.createdAt.toISOString(),
+      dns: dnsByHostname.get(domain.hostname.toLowerCase()) ?? null,
     })),
     deployments: site.deployments
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
@@ -60,6 +77,7 @@ export default async function DashboardPage() {
       <DashboardClient
         user={{ email: session.user.email, fullName: session.user.fullName }}
         freeDomainSuffix={env.PLATFORM_FREE_DOMAIN}
+        edgeIp={env.PLATFORM_EDGE_IP}
         sites={serializedSites}
       />
     </main>

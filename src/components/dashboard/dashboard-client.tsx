@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import type { DnsCheckResult } from "@/lib/dns";
 
 export type DashboardSite = {
   id: string;
@@ -28,6 +29,7 @@ export type DashboardSite = {
     verificationStatus: string;
     type: string;
     createdAt: string;
+    dns: (DnsCheckResult & { checkedAt?: string }) | null;
   }>;
   deployments: Array<{
     id: string;
@@ -50,10 +52,11 @@ export type DashboardClientProps = {
     fullName: string | null;
   };
   freeDomainSuffix: string;
+  edgeIp: string;
   sites: DashboardSite[];
 };
 
-export function DashboardClient({ user, freeDomainSuffix, sites }: DashboardClientProps) {
+export function DashboardClient({ user, freeDomainSuffix, edgeIp, sites }: DashboardClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [createError, setCreateError] = useState<string | null>(null);
@@ -300,7 +303,9 @@ export function DashboardClient({ user, freeDomainSuffix, sites }: DashboardClie
                       </p>
                       <DomainForm
                         current={primary}
+                        edgeIp={edgeIp}
                         freeSuffix={freeDomainSuffix}
+                        domains={site.domains}
                         onSubmit={(hostname) => handleDomainChange(site.id, hostname)}
                         onRequestPurchase={(payload) =>
                           handleDomainPurchase(site.id, payload.domain, payload.tlds, payload.budget)
@@ -392,24 +397,83 @@ function DeployForm({ siteId, onDeploy }: DeployFormProps) {
 
 type DomainFormProps = {
   current: string;
+  edgeIp: string;
   freeSuffix: string;
+  domains: DashboardSite["domains"];
   existingRequests: DashboardSite["purchaseRequests"];
   onSubmit: (hostname: string) => Promise<void>;
   onRequestPurchase: (payload: { domain: string; tlds: string[]; budget?: number }) => Promise<void>;
 };
 
-function DomainForm({ current, freeSuffix, onSubmit, onRequestPurchase, existingRequests }: DomainFormProps) {
+const formatDnsStatus = (result?: DnsCheckResult | null) => {
+  if (!result) return "Pending check";
+  if (result.status === "MATCH") return "✅ Points to Noesis edge";
+  if (result.status === "MISMATCH") return "⚠️ DNS active but not pointing to Noesis";
+  return "⏳ DNS not resolved yet";
+};
+
+function DomainForm({
+  current,
+  edgeIp,
+  freeSuffix,
+  domains,
+  existingRequests,
+  onSubmit,
+  onRequestPurchase,
+}: DomainFormProps) {
   const [value, setValue] = useState(current);
   const [requestDomain, setRequestDomain] = useState("");
   const [tlds, setTlds] = useState(".com,.ai");
   const [budget, setBudget] = useState("200");
+
+  useEffect(() => setValue(current), [current]);
+
+  const primaryDomainEntry = useMemo(
+    () => domains.find((domain) => domain.hostname === current),
+    [domains, current],
+  );
+
+  const initialStatus = primaryDomainEntry?.dns ?? null;
+  const [primaryStatus, setPrimaryStatus] = useState<DnsCheckResult | null>(initialStatus);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
+
+  useEffect(() => {
+    setPrimaryStatus(initialStatus);
+  }, [initialStatus]);
+
+  const fetchDnsStatus = useCallback(async () => {
+    if (!current) return;
+    setIsChecking(true);
+    try {
+      const response = await fetch(`/api/domains/status?hostname=${encodeURIComponent(current)}`);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error ?? "Unable to check DNS");
+      }
+      setPrimaryStatus(data.result);
+      setStatusError(null);
+    } catch (error) {
+      setStatusError((error as Error).message);
+    } finally {
+      setIsChecking(false);
+    }
+  }, [current]);
+
+  useEffect(() => {
+    fetchDnsStatus();
+    const interval = setInterval(fetchDnsStatus, 60_000);
+    return () => clearInterval(interval);
+  }, [fetchDnsStatus]);
 
   return (
     <div className="space-y-4">
       <form
         onSubmit={async (event) => {
           event.preventDefault();
-          await onSubmit(value.trim());
+          const hostname = value.trim();
+          if (!hostname) return;
+          await onSubmit(hostname);
         }}
         className="space-y-3"
       >
@@ -425,9 +489,53 @@ function DomainForm({ current, freeSuffix, onSubmit, onRequestPurchase, existing
           Save primary domain
         </button>
       </form>
-      <div className="rounded-2xl border border-outline/50 bg-card/40 px-4 py-3 text-xs text-muted">
-        Free sandbox subdomains are provisioned under <strong>.{freeSuffix}</strong>. Keep at least one sandbox active for staging.
+
+      <div className="rounded-2xl border border-outline/60 bg-card/50 px-4 py-3 text-xs text-muted">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs font-semibold text-foreground">
+            DNS status for <span className="text-foreground/80">{current}</span>
+          </span>
+          <button
+            type="button"
+            onClick={fetchDnsStatus}
+            disabled={isChecking}
+            className="rounded-full border border-outline/60 px-3 py-1 text-[11px] text-foreground transition hover:border-accent disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isChecking ? "Checking…" : "Check now"}
+          </button>
+        </div>
+        <p className="mt-2 text-[11px]">{formatDnsStatus(primaryStatus)}</p>
+        <p className="text-[11px] text-muted/80">
+          Point the domain A record to{" "}
+          <code className="rounded bg-card/80 px-1 py-0.5 text-foreground">{edgeIp}</code>. We re-check every 60
+          seconds.
+        </p>
+        {primaryStatus?.records?.length ? (
+          <p className="text-[11px] text-muted">Current A records: {primaryStatus.records.join(", ")}</p>
+        ) : (
+          <p className="text-[11px] text-muted">No A records detected yet.</p>
+        )}
+        {statusError && <p className="mt-2 text-[11px] text-danger">{statusError}</p>}
       </div>
+
+      <div className="rounded-2xl border border-outline/50 bg-card/40 px-4 py-3 text-xs text-muted">
+        <p className="text-xs font-semibold text-foreground">Tracked domains</p>
+        <div className="mt-2 space-y-2">
+          {domains.map((domain) => (
+            <div key={domain.id} className="flex items-center justify-between gap-3">
+              <span className="text-foreground/80">
+                {domain.hostname}
+                {domain.isPrimary ? " · primary" : ""}
+              </span>
+              <span className="text-[11px]">{formatDnsStatus(domain.dns)}</span>
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 text-[11px] text-muted">
+          Free sandbox subdomains remain available under <strong>.{freeSuffix}</strong>.
+        </p>
+      </div>
+
       <div className="space-y-2">
         <p className="text-xs font-semibold text-foreground">Request a domain purchase (beta)</p>
         <form

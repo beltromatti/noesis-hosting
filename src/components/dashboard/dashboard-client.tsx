@@ -489,6 +489,9 @@ function DomainForm({
           onChange={(event) => setValue(event.target.value)}
           className="w-full rounded-2xl border border-outline/60 bg-card/60 px-4 py-2 text-xs text-foreground outline-none focus:border-accent"
         />
+        <p className="text-[11px] text-muted">
+          Reserved namespace <code className="rounded bg-card/80 px-1 py-0.5 text-foreground">*.{freeSuffix}</code> is managed automatically and cannot be reassigned.
+        </p>
         <button
           type="submit"
           className="w-full rounded-full border border-outline/60 px-4 py-2 text-xs font-semibold text-foreground transition hover:border-accent"

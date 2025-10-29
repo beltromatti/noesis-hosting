@@ -16,6 +16,7 @@ Upload zipped builds, wire up domains, and manage security-safe deployments from
 - **Site management** – create sites, upload zipped static bundles, trigger redeploys, and track deployment history.
 - **Security automation** – ClamAV scanning, nginx config generation, HTTPS enforcement toggles, firewall presets.
 - **Domain handling** – free subdomains under `hosting.noesisai.org`, custom domain assignment, and purchase-request workflow scaffolding.
+- **Automatic DNS provisioning** – sandbox subdomains are minted via the Cloudflare API and proxied to the Noesis edge automatically.
 - **Infrastructure hooks** – nginx snippets dropped into `/etc/nginx/hosted-sites`, PM2 process for production runtime.
 - **DNS monitoring** – scheduled checks verify that primary domains resolve to the configured edge IP (or Cloudflare orange-cloud proxies) with status surfaced in the dashboard.
 
@@ -54,12 +55,15 @@ PLATFORM_UPLOAD_TMP="/var/www/noesis-hosting/tmp"
 PLATFORM_NGINX_SNIPPETS="/etc/nginx/hosted-sites"
 PLATFORM_FREE_DOMAIN="hosting.noesisai.org"
 PLATFORM_EDGE_IP="13.62.103.65"
+PLATFORM_ZONE_NAME="noesisai.org"
+CLOUDFLARE_EMAIL="your-cloudflare-email@example.com"
+CLOUDFLARE_API_KEY="your-global-api-key"
 MAX_ARCHIVE_SIZE_MB="150"
 ```
 
 Ensure the upload directories exist and are writable by the runtime user.
 
-`PLATFORM_EDGE_IP` is the public IPv4 address your domains should resolve to; the dashboard uses it to flag DNS propagation.
+`PLATFORM_EDGE_IP` is the public IPv4 address your domains should resolve to; the dashboard uses it to flag DNS propagation. `PLATFORM_ZONE_NAME`, `CLOUDFLARE_EMAIL`, and `CLOUDFLARE_API_KEY` allow the platform to mint sandbox DNS records (proxied through Cloudflare) automatically.
 
 ## 🧑‍💻 Local development
 

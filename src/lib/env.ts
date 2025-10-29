@@ -8,6 +8,9 @@ type RawEnv = {
   PLATFORM_NGINX_SNIPPETS?: string;
   PLATFORM_FREE_DOMAIN?: string;
   PLATFORM_EDGE_IP?: string;
+  PLATFORM_ZONE_NAME?: string;
+  CLOUDFLARE_EMAIL?: string;
+  CLOUDFLARE_API_KEY?: string;
   MAX_ARCHIVE_SIZE_MB?: string;
 };
 
@@ -24,6 +27,9 @@ const envSchema = z.object({
       /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}$/,
       "PLATFORM_EDGE_IP must be a valid IPv4 address",
     ),
+  PLATFORM_ZONE_NAME: z.string().min(1, "PLATFORM_ZONE_NAME is required"),
+  CLOUDFLARE_EMAIL: z.string().email("CLOUDFLARE_EMAIL must be a valid email"),
+  CLOUDFLARE_API_KEY: z.string().min(20, "CLOUDFLARE_API_KEY is required"),
   MAX_ARCHIVE_SIZE_MB: z.coerce.number().min(50).max(1024).default(200),
 });
 
@@ -31,3 +37,6 @@ export const env = envSchema.parse(process.env as RawEnv);
 
 export const MAX_ARCHIVE_BYTES = env.MAX_ARCHIVE_SIZE_MB * 1024 * 1024;
 export const EDGE_IP = env.PLATFORM_EDGE_IP;
+export const ZONE_NAME = env.PLATFORM_ZONE_NAME;
+export const CLOUDFLARE_EMAIL = env.CLOUDFLARE_EMAIL;
+export const CLOUDFLARE_API_KEY = env.CLOUDFLARE_API_KEY;

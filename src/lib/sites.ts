@@ -6,6 +6,7 @@ import { prisma } from "./prisma";
 import { env, MAX_ARCHIVE_BYTES } from "./env";
 import { randomSlug, slugify } from "./slug";
 import { DomainStatus, DomainType, type Site, type SiteDomain } from "@prisma/client";
+import { ensureSandboxDnsRecord } from "./cloudflare";
 
 const execAsync = promisify(exec);
 
@@ -68,6 +69,11 @@ export async function createSiteForUser(userId: string, input: CreateSiteInput) 
     throw new Error("Site name is required.");
   }
 
+  const normalizedCustomDomain = input.customDomain?.trim().toLowerCase();
+  if (normalizedCustomDomain && normalizedCustomDomain.endsWith(env.PLATFORM_FREE_DOMAIN)) {
+    throw new Error(`Custom domains cannot use the reserved ${env.PLATFORM_FREE_DOMAIN} sandbox namespace.`);
+  }
+
   const baseSlug = slugify(trimmedName);
   let slug = baseSlug;
   let suffix = 1;
@@ -97,10 +103,10 @@ export async function createSiteForUser(userId: string, input: CreateSiteInput) 
             verificationStatus: DomainStatus.VERIFIED,
             type: DomainType.FREE_SUBDOMAIN,
           },
-          ...(input.customDomain
+          ...(normalizedCustomDomain
             ? [
                 {
-                  hostname: input.customDomain.toLowerCase(),
+                  hostname: normalizedCustomDomain,
                   isPrimary: false,
                   verificationStatus: DomainStatus.PENDING,
                   type: DomainType.CUSTOM,
@@ -112,7 +118,7 @@ export async function createSiteForUser(userId: string, input: CreateSiteInput) 
       purchaseRequests: input.requestDomainPurchase
         ? {
             create: {
-              domain: input.customDomain?.toLowerCase() ?? `${slug}`,
+              domain: normalizedCustomDomain ?? `${slug}`,
               tlds: [".com", ".ai", ".org"],
               notes: "Auto-generated purchase request. Update with user preferences from dashboard.",
             },
@@ -122,6 +128,14 @@ export async function createSiteForUser(userId: string, input: CreateSiteInput) 
     include: { domains: true },
   });
 
+  try {
+    await ensureSandboxDnsRecord(freeSubdomain);
+  } catch (error) {
+    await prisma.site.delete({ where: { id: site.id } });
+    await fs.rm(storagePath, { recursive: true, force: true }).catch(() => undefined);
+    throw new Error(`Failed to create sandbox DNS record: ${(error as Error).message}`);
+  }
+
   await refreshNginxForSite(site);
   return site;
 }
@@ -130,6 +144,18 @@ export async function updatePrimaryDomain(site: Site & { domains: SiteDomain[] }
   const normalized = hostname.trim().toLowerCase();
   if (!normalized) {
     throw new Error("Domain cannot be empty");
+  }
+
+  const sandboxDomain = site.domains.find((d) => d.type === DomainType.FREE_SUBDOMAIN)?.hostname;
+  if (normalized.endsWith(env.PLATFORM_FREE_DOMAIN) && normalized !== sandboxDomain) {
+    throw new Error("Sandbox subdomains are managed automatically and cannot be reassigned manually.");
+  }
+
+  if (normalized.endsWith(env.PLATFORM_FREE_DOMAIN) && normalized === sandboxDomain) {
+    // nothing to change if it's already primary
+    if (site.domains.find((d) => d.hostname === normalized)?.isPrimary) {
+      return site;
+    }
   }
 
   await prisma.$transaction(async (tx) => {
@@ -150,9 +176,7 @@ export async function updatePrimaryDomain(site: Site & { domains: SiteDomain[] }
           hostname: normalized,
           isPrimary: true,
           verificationStatus: DomainStatus.PENDING,
-          type: normalized.endsWith(env.PLATFORM_FREE_DOMAIN)
-            ? DomainType.FREE_SUBDOMAIN
-            : DomainType.CUSTOM,
+          type: DomainType.CUSTOM,
         },
       });
     }

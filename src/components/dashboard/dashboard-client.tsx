@@ -407,9 +407,16 @@ type DomainFormProps = {
 
 const formatDnsStatus = (result?: DnsCheckResult | null) => {
   if (!result) return "Pending check";
-  if (result.status === "MATCH") return "✅ Points to Noesis edge";
-  if (result.status === "MISMATCH") return "⚠️ DNS active but not pointing to Noesis";
-  return "⏳ DNS not resolved yet";
+  switch (result.status) {
+    case "MATCH":
+      return "✅ Points to Noesis edge";
+    case "PROXIED":
+      return "✅ Proxied via Cloudflare";
+    case "MISMATCH":
+      return "⚠️ DNS active but not pointing to Noesis";
+    default:
+      return "⏳ DNS not resolved yet";
+  }
 };
 
 function DomainForm({
@@ -506,12 +513,24 @@ function DomainForm({
         </div>
         <p className="mt-2 text-[11px]">{formatDnsStatus(primaryStatus)}</p>
         <p className="text-[11px] text-muted/80">
-          Point the domain A record to{" "}
-          <code className="rounded bg-card/80 px-1 py-0.5 text-foreground">{edgeIp}</code>. We re-check every 60
-          seconds.
+          {primaryStatus?.status === "PROXIED" ? (
+            <>
+              Cloudflare proxy detected (orange-cloud). Current responses come from Cloudflare edges; this is
+              healthy. Keep the origin A record pointing to{" "}
+              <code className="rounded bg-card/80 px-1 py-0.5 text-foreground">{edgeIp}</code>.
+            </>
+          ) : (
+            <>
+              Point the domain A record to{" "}
+              <code className="rounded bg-card/80 px-1 py-0.5 text-foreground">{edgeIp}</code>. We re-check every 60
+              seconds.
+            </>
+          )}
         </p>
         {primaryStatus?.records?.length ? (
-          <p className="text-[11px] text-muted">Current A records: {primaryStatus.records.join(", ")}</p>
+          <p className="text-[11px] text-muted">
+            {primaryStatus.status === "PROXIED" ? "Cloudflare edge IPs" : "Current A records"}: {primaryStatus.records.join(", ")}
+          </p>
         ) : (
           <p className="text-[11px] text-muted">No A records detected yet.</p>
         )}

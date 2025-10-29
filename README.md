@@ -17,7 +17,7 @@ Upload zipped builds, wire up domains, and manage security-safe deployments from
 - **Security automation** – ClamAV scanning, nginx config generation, HTTPS enforcement toggles, firewall presets.
 - **Domain handling** – free subdomains under `hosting.noesisai.org`, custom domain assignment, and purchase-request workflow scaffolding.
 - **Infrastructure hooks** – nginx snippets dropped into `/etc/nginx/hosted-sites`, PM2 process for production runtime.
-- **DNS monitoring** – scheduled checks verify that primary domains resolve to the configured edge IP, with status surfaced in the dashboard.
+- **DNS monitoring** – scheduled checks verify that primary domains resolve to the configured edge IP (or Cloudflare orange-cloud proxies) with status surfaced in the dashboard.
 
 ## 🛠️ Stack
 

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import type { Prisma } from "@prisma/client";
 import { getSession } from "@/lib/session";
 import { listSitesForUser } from "@/lib/sites";
 import { env } from "@/lib/env";
@@ -17,10 +18,14 @@ export default async function DashboardPage() {
   }
 
   const sites = await listSitesForUser(session.userId);
+  type ListedSite = Prisma.SiteGetPayload<{
+    include: { domains: true; deployments: true; purchaseRequests: true };
+  }>;
+  const typedSites = sites as ListedSite[];
 
   const uniqueHostnames = Array.from(
     new Set(
-      sites.flatMap((site) => site.domains.map((domain) => domain.hostname.toLowerCase())),
+      typedSites.flatMap((site) => site.domains.map((domain) => domain.hostname.toLowerCase())),
     ),
   );
 
@@ -33,7 +38,7 @@ export default async function DashboardPage() {
 
   const dnsByHostname = new Map(dnsPairs);
 
-  const serializedSites = sites.map((site) => ({
+  const serializedSites = typedSites.map((site) => ({
     id: site.id,
     name: site.name,
     slug: site.slug,
@@ -42,6 +47,7 @@ export default async function DashboardPage() {
     lastDeploymentAt: site.lastDeploymentAt ? site.lastDeploymentAt.toISOString() : null,
     createdAt: site.createdAt.toISOString(),
     securityConfig: (site.securityConfig as Record<string, unknown>) ?? null,
+    hasArchive: site.deployments.length > 0,
     domains: site.domains.map((domain) => ({
       id: domain.id,
       hostname: domain.hostname,
@@ -51,7 +57,7 @@ export default async function DashboardPage() {
       createdAt: domain.createdAt.toISOString(),
       dns: dnsByHostname.get(domain.hostname.toLowerCase()) ?? null,
     })),
-    deployments: site.deployments
+    deployments: [...site.deployments]
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
       .map((deployment) => ({
         id: deployment.id,

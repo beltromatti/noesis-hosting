@@ -29,7 +29,10 @@ export async function PATCH(
   try {
     const payload = await request.json();
     const { hostname } = schema.parse(payload);
-    const updated = await updatePrimaryDomain(site, hostname);
+    const updated = await updatePrimaryDomain(
+      site as Parameters<typeof updatePrimaryDomain>[0],
+      hostname,
+    );
     return NextResponse.json({ site: updated });
   } catch (error) {
     console.error("Domain update failed", error);

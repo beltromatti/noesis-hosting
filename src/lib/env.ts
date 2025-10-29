@@ -11,6 +11,8 @@ type RawEnv = {
   PLATFORM_ZONE_NAME?: string;
   CLOUDFLARE_EMAIL?: string;
   CLOUDFLARE_API_KEY?: string;
+  PLATFORM_CERT_ROOT?: string;
+  ACME_ACCOUNT_EMAIL?: string;
   MAX_ARCHIVE_SIZE_MB?: string;
 };
 
@@ -30,6 +32,8 @@ const envSchema = z.object({
   PLATFORM_ZONE_NAME: z.string().min(1, "PLATFORM_ZONE_NAME is required"),
   CLOUDFLARE_EMAIL: z.string().email("CLOUDFLARE_EMAIL must be a valid email"),
   CLOUDFLARE_API_KEY: z.string().min(20, "CLOUDFLARE_API_KEY is required"),
+  PLATFORM_CERT_ROOT: z.string().min(1, "PLATFORM_CERT_ROOT is required"),
+  ACME_ACCOUNT_EMAIL: z.string().email("ACME_ACCOUNT_EMAIL must be a valid email"),
   MAX_ARCHIVE_SIZE_MB: z.coerce.number().min(50).max(1024).default(200),
 });
 
@@ -40,3 +44,5 @@ export const EDGE_IP = env.PLATFORM_EDGE_IP;
 export const ZONE_NAME = env.PLATFORM_ZONE_NAME;
 export const CLOUDFLARE_EMAIL = env.CLOUDFLARE_EMAIL;
 export const CLOUDFLARE_API_KEY = env.CLOUDFLARE_API_KEY;
+export const CERT_ROOT = env.PLATFORM_CERT_ROOT;
+export const ACME_EMAIL = env.ACME_ACCOUNT_EMAIL;

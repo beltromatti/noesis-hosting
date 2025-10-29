@@ -47,6 +47,10 @@ export async function POST(
     await fs.rm(tmpPath, { force: true });
 
     await prisma.$transaction(async (tx) => {
+      await tx.deployment.updateMany({
+        where: { siteId: site.id, status: "ACTIVE" },
+        data: { status: "ROLLED_BACK" },
+      });
       await tx.deployment.create({
         data: {
           siteId: site.id,
@@ -67,7 +71,7 @@ export async function POST(
 
     const freshSite = await getSiteForUser(site.id, session.userId);
     if (freshSite) {
-      await refreshNginxForSite(freshSite);
+      await refreshNginxForSite(freshSite as Parameters<typeof refreshNginxForSite>[0]);
     }
 
     return NextResponse.json({ ok: true });

@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@prisma/client": "5.18.0",
+    "acme-client": "^5.4.0",
+    "archiver": "^7.0.1",
     "bcryptjs": "^3.0.2",
     "extract-zip": "^2.0.1",
     "mime-types": "^3.0.1",
@@ -21,6 +23,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/archiver": "^7.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -28,6 +31,7 @@
     "eslint-config-next": "16.0.1",
     "prisma": "5.18.0",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   },
   "pnpm": {

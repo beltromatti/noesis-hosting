@@ -12,6 +12,7 @@ export type DashboardSite = {
   maxUploadSize: number;
   lastDeploymentAt: string | null;
   createdAt: string;
+  hasArchive: boolean;
   securityConfig: {
     forceHttps?: boolean;
     autoIndexing?: boolean;
@@ -62,6 +63,7 @@ export function DashboardClient({ user, freeDomainSuffix, edgeIp, sites }: Dashb
   const [createError, setCreateError] = useState<string | null>(null);
   const [domainMessage, setDomainMessage] = useState<string | null>(null);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [siteMessage, setSiteMessage] = useState<string | null>(null);
 
   const handleCreateSite = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -161,6 +163,57 @@ export function DashboardClient({ user, freeDomainSuffix, edgeIp, sites }: Dashb
     startTransition(() => router.refresh());
   };
 
+  const handlePause = async (siteId: string) => {
+    setSiteMessage(null);
+    const response = await fetch(`/api/sites/${siteId}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "pause" }),
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      setSiteMessage(payload.error ?? "Unable to pause the site");
+      return;
+    }
+    setSiteMessage("Site paused successfully.");
+    startTransition(() => router.refresh());
+  };
+
+  const handleResume = async (siteId: string) => {
+    setSiteMessage(null);
+    const response = await fetch(`/api/sites/${siteId}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "resume" }),
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      setSiteMessage(payload.error ?? "Unable to resume the site");
+      return;
+    }
+    setSiteMessage("Site is live again.");
+    startTransition(() => router.refresh());
+  };
+
+  const handleDelete = async (siteId: string, siteName: string) => {
+    if (!window.confirm(`Delete ${siteName}? This action cannot be undone.`)) {
+      return;
+    }
+    setSiteMessage(null);
+    const response = await fetch(`/api/sites/${siteId}`, { method: "DELETE" });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      setSiteMessage(payload.error ?? "Unable to delete the site");
+      return;
+    }
+    setSiteMessage("Site removed. DNS propagation may take a minute.");
+    startTransition(() => router.refresh());
+  };
+
+  const handleDownload = (siteId: string) => {
+    window.location.href = `/api/sites/${siteId}/archive`;
+  };
+
   const primaryDomain = (site: DashboardSite) =>
     site.domains.find((domain) => domain.isPrimary)?.hostname ?? `${site.slug}.${freeDomainSuffix}`;
 
@@ -176,6 +229,38 @@ export function DashboardClient({ user, freeDomainSuffix, edgeIp, sites }: Dashb
       enabled: site.securityConfig?.firewall?.enabled ?? true,
     },
   });
+
+  const formatSiteStatus = (status: string) => {
+    switch (status) {
+      case "ACTIVE":
+        return { label: "Live", tone: "border border-outline/60 text-accent" };
+      case "DISABLED":
+        return { label: "Paused", tone: "border border-danger/40 text-danger" };
+      case "FAILED":
+        return { label: "Failed", tone: "border border-danger/40 text-danger" };
+      case "PENDING":
+        return { label: "Pending", tone: "border border-outline/60 text-muted" };
+      default:
+        return { label: status, tone: "border border-outline/60 text-muted" };
+    }
+  };
+
+  const formatDeploymentStatus = (status: string) => {
+    switch (status) {
+      case "ACTIVE":
+        return { label: "Live", tone: "text-accent" };
+      case "ROLLED_BACK":
+        return { label: "Previous", tone: "text-muted" };
+      case "FAILED":
+        return { label: "Failed", tone: "text-danger" };
+      case "DEPLOYING":
+        return { label: "Deploying", tone: "text-accent" };
+      case "PENDING":
+        return { label: "Pending", tone: "text-muted" };
+      default:
+        return { label: status, tone: "text-muted" };
+    }
+  };
 
   return (
     <div className="space-y-12">
@@ -255,6 +340,11 @@ export function DashboardClient({ user, freeDomainSuffix, edgeIp, sites }: Dashb
           {uploadMessage}
         </div>
       )}
+      {siteMessage && (
+        <div className="rounded-2xl border border-outline/60 bg-card/60 px-5 py-3 text-sm text-muted">
+          {siteMessage}
+        </div>
+      )}
 
       <section className="space-y-8">
         <h2 className="text-2xl font-semibold">Your hosted sites</h2>
@@ -272,23 +362,31 @@ export function DashboardClient({ user, freeDomainSuffix, edgeIp, sites }: Dashb
                     <div>
                       <div className="flex items-center gap-3">
                         <h3 className="text-xl font-semibold text-foreground">{site.name}</h3>
-                        <span className="rounded-full border border-outline/60 px-3 py-1 text-xs uppercase tracking-[0.2em] text-muted">
-                          {site.status}
-                        </span>
+                        {(() => {
+                          const { label, tone } = formatSiteStatus(site.status);
+                          return (
+                            <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ${tone}`}>
+                              {label}
+                            </span>
+                          );
+                        })()}
                       </div>
                       <p className="mt-2 text-sm text-muted">
                         Primary domain: <span className="text-foreground">{primary}</span> · Sandbox: {sandbox}
                       </p>
+                      {site.status === "DISABLED" && (
+                        <p className="text-xs text-danger/80">Site is paused. Visitors receive a 503 maintenance response.</p>
+                      )}
                       <p className="text-xs text-muted/70">
                         Last deployment: {site.lastDeploymentAt ? new Date(site.lastDeploymentAt).toLocaleString() : "Never"}
                       </p>
                     </div>
-                    <div className="text-xs text-muted">
-                      Created {new Date(site.createdAt).toLocaleDateString()}
+                    <div className="text-xs text-muted text-right">
+                      <p>Created {new Date(site.createdAt).toLocaleDateString()}</p>
                     </div>
                   </div>
 
-                  <div className="grid gap-6 md:grid-cols-3">
+                  <div className="grid gap-6 md:grid-cols-4">
                     <div className="space-y-3">
                       <h4 className="text-sm font-semibold text-foreground">Deploy new version</h4>
                       <p className="text-xs text-muted">
@@ -322,20 +420,69 @@ export function DashboardClient({ user, freeDomainSuffix, edgeIp, sites }: Dashb
                         onChange={handleSecurityToggle}
                       />
                     </div>
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-semibold text-foreground">Current build & controls</h4>
+                      <p className="text-xs text-muted">
+                        Download the latest deployed build, pause traffic, or remove the site entirely.
+                      </p>
+                      <div className="flex flex-col gap-2 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => handleDownload(site.id)}
+                          disabled={!site.hasArchive}
+                          className="rounded-full border border-outline/60 px-4 py-2 font-semibold text-foreground transition hover:border-accent disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Download current build
+                        </button>
+                        {site.status === "DISABLED" ? (
+                          <button
+                            type="button"
+                            onClick={() => handleResume(site.id)}
+                            className="rounded-full border border-outline/60 px-4 py-2 font-semibold text-foreground transition hover:border-accent"
+                          >
+                            Resume site
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handlePause(site.id)}
+                            className="rounded-full border border-outline/60 px-4 py-2 font-semibold text-foreground transition hover:border-accent"
+                          >
+                            Pause site
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(site.id, site.name)}
+                          className="rounded-full border border-danger/40 px-4 py-2 font-semibold text-danger transition hover:border-danger"
+                        >
+                          Delete site
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   {site.deployments.length > 0 && (
                     <div>
                       <h4 className="text-sm font-semibold text-foreground">Recent deployments</h4>
                       <ul className="mt-3 space-y-2 text-xs text-muted">
-                        {site.deployments.slice(0, 5).map((deployment) => (
-                          <li key={deployment.id} className="flex items-center justify-between rounded-xl border border-outline/40 bg-card/50 px-4 py-2">
-                            <span>
-                              {deployment.status} · {new Date(deployment.createdAt).toLocaleString()}
-                              {deployment.notes ? ` — ${deployment.notes}` : ""}
-                            </span>
-                          </li>
-                        ))}
+                        {site.deployments
+                          .slice(0, 5)
+                          .map((deployment) => {
+                            const { label, tone } = formatDeploymentStatus(deployment.status);
+                            return (
+                              <li
+                                key={deployment.id}
+                                className="flex items-center justify-between rounded-xl border border-outline/40 bg-card/50 px-4 py-2"
+                              >
+                                <span>
+                                  <span className={`mr-2 font-semibold ${tone}`}>{label}</span>
+                                  {new Date(deployment.createdAt).toLocaleString()}
+                                  {deployment.notes ? ` — ${deployment.notes}` : ""}
+                                </span>
+                              </li>
+                            );
+                          })}
                       </ul>
                     </div>
                   )}

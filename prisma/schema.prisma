@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SiteStatus {
+  PENDING
+  ACTIVE
+  FAILED
+  DISABLED
+}
+
+enum DomainStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+enum DomainType {
+  FREE_SUBDOMAIN
+  CUSTOM
+  PURCHASE_REQUEST
+}
+
+enum DeploymentStatus {
+  PENDING
+  DEPLOYING
+  ACTIVE
+  FAILED
+  ROLLED_BACK
+}
+
+enum DomainPurchaseStatus {
+  PENDING
+  IN_REVIEW
+  SUBMITTED
+  COMPLETED
+  REJECTED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  fullName     String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  sites        Site[]
+  sessions     Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  token     String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
+model Site {
+  id               String        @id @default(cuid())
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String
+  name             String
+  slug             String        @unique
+  status           SiteStatus    @default(PENDING)
+  storagePath      String
+  maxUploadSize    Int           @default(157286400)
+  lastDeploymentAt DateTime?
+  securityConfig   Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  domains          SiteDomain[]
+  deployments      Deployment[]
+  purchaseRequests DomainPurchaseRequest[]
+}
+
+model SiteDomain {
+  id                  String       @id @default(cuid())
+  site                Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  siteId              String
+  hostname            String       @unique
+  isPrimary           Boolean      @default(false)
+  verificationStatus  DomainStatus @default(PENDING)
+  type                DomainType   @default(FREE_SUBDOMAIN)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+}
+
+model Deployment {
+  id           String            @id @default(cuid())
+  site         Site              @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  siteId       String
+  status       DeploymentStatus  @default(PENDING)
+  notes        String?
+  createdAt    DateTime          @default(now())
+  completedAt  DateTime?
+}
+
+model DomainPurchaseRequest {
+  id        String                @id @default(cuid())
+  site      Site                  @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  siteId    String
+  domain    String
+  tlds      String[]
+  status    DomainPurchaseStatus  @default(PENDING)
+  budgetUsd Int?
+  notes     String?
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  @@index([siteId, status])
+}

@@ -4,6 +4,7 @@ import { getSession } from "@/lib/session";
 import { listSitesForUser } from "@/lib/sites";
 import { env } from "@/lib/env";
 import { checkDomainARecord } from "@/lib/dns";
+import Link from "next/link";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import { LogoutButton } from "@/components/auth/logout-button";
 
@@ -91,6 +92,17 @@ export default async function DashboardPage() {
         edgeIp={env.PLATFORM_EDGE_IP}
         sites={serializedSites}
       />
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/30 pt-6 text-xs text-muted-foreground">
+        <span>© {new Date().getFullYear()} Noesis AI</span>
+        <div className="flex items-center gap-4">
+          <Link href="/privacy" className="hover:text-foreground">
+            Privacy Notice
+          </Link>
+          <Link href="/terms" className="hover:text-foreground">
+            Terms of Use
+          </Link>
+        </div>
+      </div>
     </main>
   );
 }

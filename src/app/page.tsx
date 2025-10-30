@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Github, Mail, ScrollText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -92,23 +92,23 @@ export default function LandingPage() {
               <p className="max-w-3xl text-lg text-muted md:text-xl">
                 Noesis Hosting delivers zero-cost deployments for research collectives, indie builders, and early-stage labs. Upload a build, attach a domain, and ship globally with automated TLS, antivirus scanning, and a minimal control centre crafted in Milan.
               </p>
-              <div className="flex flex-wrap gap-4">
-                <Button
-                  size="lg"
-                  className="rounded-full px-7 text-sm font-semibold tracking-wide"
-                  asChild
-                >
+          <div className="flex flex-wrap gap-4">
+            <Button
+              size="lg"
+              className="rounded-full px-7 text-sm font-semibold tracking-wide"
+              asChild
+            >
                   <Link href="/signup">Create free account</Link>
                 </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="rounded-full border-border/60 bg-transparent px-7 text-sm font-semibold tracking-wide text-foreground transition hover:bg-card/60"
-                  asChild
-                >
-                  <Link href="/login">Access dashboard</Link>
-                </Button>
-              </div>
+            <Button
+              size="lg"
+              variant="outline"
+              className="rounded-full px-7 text-sm font-semibold tracking-wide"
+              asChild
+            >
+              <Link href="/login">Access dashboard</Link>
+            </Button>
+          </div>
             </div>
             <div className="grid gap-6 md:grid-cols-3">
               {featureHighlights.map((feature) => (
@@ -254,14 +254,46 @@ export default function LandingPage() {
                 Founded in Milan by Mattia Beltrami, Noesis AI builds open infrastructure that feels deliberate, honest, and elegant. We believe the future of intelligence should be hosted with care.
               </p>
             </div>
-            <div className="space-y-3 text-sm text-muted">
-              <p>👉 GitHub: github.com/noesisai-lab</p>
-              <p>✉️ Contact: info@noesisai.org</p>
-              <p>📜 License: Noesis AI License Agreement</p>
-            </div>
+          <div className="space-y-3 text-sm text-muted">
+            <p className="flex items-center gap-3">
+              <Github className="h-4 w-4 text-muted-foreground" />
+              <Link
+                href="https://github.com/noesisai-lab"
+                target="_blank"
+                rel="noreferrer"
+                className="text-foreground hover:text-foreground/80"
+              >
+                GitHub: github.com/noesisai-lab
+              </Link>
+            </p>
+            <p className="flex items-center gap-3">
+              <Mail className="h-4 w-4 text-muted-foreground" />
+              <Link href="mailto:info@noesisai.org" className="text-foreground hover:text-foreground/80">
+                Contact: info@noesisai.org
+              </Link>
+            </p>
+            <p className="flex items-center gap-3">
+              <ScrollText className="h-4 w-4 text-muted-foreground" />
+              <Link href="/terms" className="text-foreground hover:text-foreground/80">
+                License: Noesis AI License Agreement
+              </Link>
+            </p>
+          </div>
           </CardContent>
         </Card>
       </section>
+
+      <footer className="mx-auto mt-16 flex max-w-6xl flex-wrap items-center justify-between gap-3 border-t border-border/30 px-6 pt-6 text-xs text-muted-foreground">
+        <span>© {new Date().getFullYear()} Noesis AI • Milan, Italy</span>
+        <div className="flex items-center gap-4">
+          <Link href="/privacy" className="hover:text-foreground">
+            Privacy Notice
+          </Link>
+          <Link href="/terms" className="hover:text-foreground">
+            Terms of Use
+          </Link>
+        </div>
+      </footer>
     </main>
   );
 }

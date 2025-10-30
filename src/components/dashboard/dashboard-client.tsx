@@ -1149,7 +1149,7 @@ function ControlsSection({ site, message, onPause, onResume, onDelete, onDownloa
         <div className="grid gap-3 md:grid-cols-2">
           <Button
             variant="outline"
-            className="h-11 rounded-full border-border/60 bg-transparent text-sm font-semibold tracking-wide text-foreground hover:bg-card/60"
+            className="h-11 rounded-full text-sm font-semibold tracking-wide"
             onClick={() => onDownload(site.id)}
             disabled={!site.hasArchive}
           >
@@ -1167,7 +1167,7 @@ function ControlsSection({ site, message, onPause, onResume, onDelete, onDownloa
           ) : (
             <Button
               variant="outline"
-              className="h-11 rounded-full border-border/60 bg-transparent text-sm font-semibold tracking-wide text-foreground hover:bg-card/60"
+              className="h-11 rounded-full text-sm font-semibold tracking-wide"
               onClick={() => onPause(site.id)}
             >
               <Pause className="mr-2 h-4 w-4" />

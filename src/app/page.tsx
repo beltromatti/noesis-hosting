@@ -1,72 +1,77 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 const featureHighlights = [
   {
-    title: "Instant Static Deployments",
+    title: "Instant static deployments",
     description:
-      "Upload a zipped build or connect a CI pipeline. We unpack, scan for threats, and publish on your domain within seconds.",
+      "Upload a zipped build or connect automation. We scan, extract, and publish globally within seconds.",
     badge: "Fast onboarding",
   },
   {
-    title: "Zero-Cost for Open Research",
+    title: "Zero-cost research tier",
     description:
-      "Host limitless static sites for free under *.hosting.noesisai.org or point a custom domain you already own.",
+      "Host unlimited static sites under *.hosting.noesisai.org or attach domains you already own — no invoices, no catch.",
     badge: "Free tier",
   },
   {
-    title: "Production Hardening",
+    title: "Production hardening",
     description:
-      "Antivirus scanning, nginx hardening, access logs, and security presets come out of the box with every deployment.",
-    badge: "Secure by default",
+      "Antivirus scanning, nginx provisioning, cache headers, and logging are wired in by default for every deploy.",
+    badge: "Secure by design",
   },
 ];
 
 const workflowSteps = [
   {
     step: "01",
-    title: "Create your account",
-    copy: "Sign up with email and password. Every project lives inside a secure workspace with audit trails.",
+    title: "Create your workspace",
+    copy: "Register with email and password. Every action is tracked with immutable audit trails.",
   },
   {
     step: "02",
-    title: "Upload or connect",
-    copy: "Drop a zipped build (max 150 MB) or wire up automation via the coming CI hooks. Every archive is scanned before extraction.",
+    title: "Upload or automate",
+    copy: "Drop a zipped dist/ folder (150 MB max) or plug in the upcoming CI hooks. Every archive is scanned before extraction.",
   },
   {
     step: "03",
-    title: "Configure domains",
-    copy: "Use the guided DNS wizard to map an existing domain or request a complimentary staging subdomain instantly.",
+    title: "Map your domains",
+    copy: "Follow the guided wizard to verify DNS or instantly receive a sandbox subdomain on hosting.noesisai.org.",
   },
   {
     step: "04",
-    title: "Monitor and evolve",
-    copy: "Track deployment history, toggle security rules, and upgrade to custom purchases without leaving the dashboard.",
+    title: "Operate with confidence",
+    copy: "Redeploy, roll back, toggle security presets, and request purchases without leaving the dashboard.",
   },
 ];
 
 const tutorialSteps = [
   {
-    title: "1. Point your DNS",
+    title: "1. Point DNS",
     items: [
-      "Create an A record for your domain pointing to the Noesis edge IP.",
-      "Add a proxied CNAME for www → root if you use Cloudflare.",
-      "Wait for propagation — we check status automatically.",
+      "Create an A record to the Noesis edge IP.",
+      "Proxy through Cloudflare? Add an orange-cloud CNAME for www → root.",
+      "Propagation status refreshes every minute in the dashboard.",
     ],
   },
   {
     title: "2. Upload your bundle",
     items: [
-      "Compress your static site output — dist/, out/, or build/.",
-      "Drag & drop in the dashboard. Files above 150 MB are rejected to keep the edge fast.",
-      "We run ClamAV before extraction, then provision nginx and cache headers for you.",
+      "Compress your static output (dist/, out/, build/).",
+      "Drag & drop — larger archives are rejected to keep the edge fast.",
+      "ClamAV scanning runs before extraction and nginx is provisioned automatically.",
     ],
   },
   {
     title: "3. Ship and monitor",
     items: [
-      "Trigger redeploys anytime. Every push is versioned for rollback.",
-      "Toggle HTTPS enforcement, access logging, and firewall presets per site.",
-      "Invite collaborators (coming soon) with scoped permissions.",
+      "Trigger redeploys any time and roll back in one click.",
+      "Enforce HTTPS, enable access logging, and adjust firewall presets per site.",
+      "Upcoming: invite collaborators with granular permissions.",
     ],
   },
 ];
@@ -74,118 +79,155 @@ const tutorialSteps = [
 export default function LandingPage() {
   return (
     <main className="pb-24">
-      <header className="relative z-10 mx-auto flex max-w-6xl flex-col gap-12 px-6 pt-20 md:pt-28">
-        <div className="flex flex-col gap-6">
-          <span className="tag w-max">Open-source infrastructure by Noesis AI</span>
-          <h1 className="text-balance text-4xl font-semibold leading-tight text-foreground md:text-6xl">
-            Host static experiences with production discipline — for the price of curiosity.
-          </h1>
-          <p className="max-w-3xl text-lg text-muted md:text-xl">
-            Noesis Hosting delivers zero-cost static deployments for research collectives, indie builders, and
-            early-stage labs. Upload your build, attach a domain, and ship globally with antivirus scanning,
-            automated nginx provisioning, and a dark, minimal control center crafted in Milan.
-          </p>
-          <div className="flex flex-wrap gap-4">
-            <Link
-              href="/signup"
-              className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-medium text-background shadow-lg shadow-accent/40 transition hover:-translate-y-0.5 hover:shadow-xl"
-            >
-              Create free account
-            </Link>
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 rounded-full border border-outline/60 px-6 py-3 text-sm font-medium text-foreground/80 transition hover:border-accent hover:text-foreground"
-            >
-              Access dashboard
-            </Link>
-          </div>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-3">
-          {featureHighlights.map((feature) => (
-            <div key={feature.title} className="glass-panel glow-border flex flex-col gap-4 p-6">
-              <span className="text-xs uppercase tracking-[0.4em] text-accent/80">{feature.badge}</span>
-              <h3 className="text-xl font-medium text-foreground">{feature.title}</h3>
-              <p className="text-sm text-muted">{feature.description}</p>
+      <section className="mx-auto flex max-w-6xl flex-col gap-10 px-6 pt-24 md:pt-32">
+        <Card className="border-border/50 bg-card/80 shadow-[0_40px_120px_-80px_rgba(0,0,0,0.65)] backdrop-blur">
+          <CardContent className="space-y-10 px-8 py-12 md:px-16">
+            <div className="space-y-6">
+              <Badge variant="outline" className="border-border/60 bg-transparent px-4 py-1 text-[11px] font-medium uppercase tracking-[0.3em] text-muted-foreground">
+                Noesis AI infrastructure
+              </Badge>
+              <h1 className="text-balance text-4xl font-semibold leading-tight md:text-6xl">
+                Host static experiences with production discipline — for the price of curiosity.
+              </h1>
+              <p className="max-w-3xl text-lg text-muted md:text-xl">
+                Noesis Hosting delivers zero-cost deployments for research collectives, indie builders, and early-stage labs. Upload a build, attach a domain, and ship globally with automated TLS, antivirus scanning, and a minimal control centre crafted in Milan.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <Button
+                  size="lg"
+                  className="rounded-full px-7 text-sm font-semibold tracking-wide"
+                  asChild
+                >
+                  <Link href="/signup">Create free account</Link>
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="rounded-full border-border/60 bg-transparent px-7 text-sm font-semibold tracking-wide text-foreground transition hover:bg-card/60"
+                  asChild
+                >
+                  <Link href="/login">Access dashboard</Link>
+                </Button>
+              </div>
             </div>
-          ))}
-        </div>
-      </header>
+            <div className="grid gap-6 md:grid-cols-3">
+              {featureHighlights.map((feature) => (
+                <Card key={feature.title} className="h-full border-border/40 bg-card/70">
+                  <CardHeader className="space-y-4">
+                    <Badge variant="outline" className="w-fit border-border/50 bg-transparent px-3 py-1 text-[11px] uppercase tracking-[0.35em] text-muted-foreground">
+                      {feature.badge}
+                    </Badge>
+                    <CardTitle className="text-xl">{feature.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-muted">
+                    {feature.description}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
-      <section className="mx-auto mt-24 flex max-w-6xl flex-col gap-12 px-6">
+      <section className="mx-auto mt-24 flex max-w-6xl flex-col gap-10 px-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="max-w-xl space-y-3">
-            <span className="tag">Workflow</span>
-            <h2 className="text-3xl font-semibold md:text-4xl">Everything you need to go live, opinionated for safety.</h2>
-            <p className="text-muted">
-              Noesis Hosting is built for human-centric AI teams that care about reliability. Every step is audited,
-              versioned, and secured so you can focus on the science.
+          <div className="space-y-3">
+            <Badge variant="outline" className="border-border/50 bg-transparent px-4 py-1 text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
+              Workflow
+            </Badge>
+            <h2 className="text-3xl font-semibold md:text-4xl">Opinionated for safety, polished for builders.</h2>
+            <p className="max-w-xl text-sm text-muted">
+              Every step is automated yet transparent. Focus on your science while Noesis handles the infrastructure choreography.
             </p>
           </div>
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-2 text-sm font-medium text-accent transition hover:text-accent/80"
-          >
-            Explore the dashboard →
-          </Link>
+          <Button variant="link" className="group h-10 gap-2 self-start px-0 text-sm font-medium text-muted hover:text-foreground" asChild>
+            <Link href="/login">
+              Explore the dashboard
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </Button>
         </div>
         <div className="grid gap-6 md:grid-cols-2">
           {workflowSteps.map((entry) => (
-            <div key={entry.step} className="glass-panel glow-border flex flex-col gap-4 p-6">
-              <span className="text-xs font-semibold uppercase tracking-[0.3em] text-accent/70">{entry.step}</span>
-              <h3 className="text-2xl font-medium text-foreground">{entry.title}</h3>
-              <p className="text-sm leading-relaxed text-muted">{entry.copy}</p>
-            </div>
+            <Card key={entry.step} className="border-border/40 bg-card/70">
+              <CardHeader className="space-y-3">
+                <Badge variant="outline" className="w-fit border-border/40 bg-transparent px-3 py-[6px] text-[11px] tracking-[0.45em] text-muted-foreground">
+                  {entry.step}
+                </Badge>
+                <CardTitle className="text-2xl">{entry.title}</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm leading-relaxed text-muted">
+                {entry.copy}
+              </CardContent>
+            </Card>
           ))}
         </div>
       </section>
 
-      <section className="mx-auto mt-24 flex max-w-6xl flex-col gap-10 px-6">
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="glass-panel glow-border p-8">
-            <span className="tag">Security</span>
-            <h2 className="mt-4 text-3xl font-semibold">Enterprise hygiene without enterprise friction.</h2>
-            <ul className="mt-6 space-y-4 text-sm text-muted">
-              <li>• ClamAV antivirus scanning before every extraction — no malware gets past the edge.</li>
-              <li>• Strict MIME validation, enforced HTTPS toggles, and optional access gating per site.</li>
-              <li>• Automated nginx provisioning with cache headers and custom domain isolation.</li>
-              <li>• Full audit trail of deployments, DNS changes, and upcoming collaborator actions.</li>
-            </ul>
-          </div>
-          <div className="glass-panel glow-border flex flex-col gap-6 p-8">
-            <div>
-              <span className="tag">Pricing</span>
-              <h2 className="mt-4 text-3xl font-semibold">Transparent and sustainable.</h2>
-            </div>
-            <div className="rounded-3xl border border-outline/60 bg-surface-strong/90 p-8 shadow-inner">
-              <h3 className="text-4xl font-semibold text-foreground">Free</h3>
-              <p className="mt-2 text-sm text-muted">Unlimited static sites • 150 MB per deploy • Automated TLS (via Cloudflare) • Antivirus scanning • Guided DNS.</p>
-              <p className="mt-4 text-xs uppercase tracking-[0.3em] text-muted">
-                Coming soon
-              </p>
-              <ul className="mt-3 space-y-2 text-sm text-muted">
-                <li>• Custom domain purchases from the dashboard.</li>
-                <li>• Team workspaces with granular permissions.</li>
-                <li>• Edge CDN analytics and performance budgets.</li>
+      <section className="mx-auto mt-24 max-w-6xl px-6">
+        <div className="grid gap-8 md:grid-cols-[7fr,5fr]">
+          <Card className="border-border/40 bg-card/70">
+            <CardHeader className="space-y-4">
+              <Badge variant="outline" className="w-fit border-border/40 bg-transparent px-4 py-1 text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
+                Security
+              </Badge>
+              <CardTitle className="text-3xl">Enterprise hygiene without enterprise friction.</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-3 text-sm text-muted">
+                <li>• ClamAV scanning runs before every extraction — nothing malicious reaches your edge.</li>
+                <li>• Strict MIME validation, enforced HTTPS, and optional access gating per site.</li>
+                <li>• Hardened nginx config with caching and isolation per domain.</li>
+                <li>• Comprehensive audit history for deployments, DNS updates, and future collaborators.</li>
               </ul>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
+
+          <Card className="flex flex-col justify-between border-border/40 bg-card/70">
+            <CardHeader className="space-y-4">
+              <Badge variant="outline" className="w-fit border-border/40 bg-transparent px-4 py-1 text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
+                Pricing
+              </Badge>
+              <CardTitle className="text-3xl">Transparent, sustainable, and open.</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <p className="text-4xl font-semibold">Free</p>
+                <p className="mt-2 text-sm text-muted">
+                  Unlimited static sites • 150 MB per deploy • Automated TLS • Antivirus scanning • Guided DNS.
+                </p>
+              </div>
+              <Separator className="bg-border/50" />
+              <div className="space-y-2 text-sm text-muted">
+                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Coming soon</p>
+                <ul className="space-y-2">
+                  <li>• Domain purchases directly from the dashboard.</li>
+                  <li>• Team workspaces with granular permissions.</li>
+                  <li>• Edge analytics and performance budgets.</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
       <section className="mx-auto mt-24 max-w-5xl px-6">
-        <div className="glass-panel glow-border p-8 md:p-12">
-          <div className="flex flex-col gap-4">
-            <span className="tag">Guided Tutorial</span>
-            <h2 className="text-3xl font-semibold md:text-4xl">From archive to live domain in three deliberate steps.</h2>
-            <p className="text-sm text-muted">
-              Whether you are mapping a personal domain or experimenting under a free sandbox, Noesis Hosting walks
-              you through the exact DNS and security actions to stay safe.
-            </p>
+        <Card className="border-border/40 bg-card/75 px-6 py-10 md:px-12 md:py-14">
+          <div className="space-y-6">
+            <Badge variant="outline" className="w-fit border-border/50 bg-transparent px-4 py-1 text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
+              Guided tutorial
+            </Badge>
+            <div className="space-y-3">
+              <h2 className="text-3xl font-semibold md:text-4xl">From archive to live domain in three deliberate steps.</h2>
+              <p className="text-sm text-muted">
+                Whether you are experimenting under a sandbox subdomain or mapping production DNS, the dashboard walks you through each action with live validation.
+              </p>
+            </div>
           </div>
-          <div className="mt-8 grid gap-8 md:grid-cols-3">
+          <Separator className="my-10 bg-border/50" />
+          <div className="grid gap-8 md:grid-cols-3">
             {tutorialSteps.map((block) => (
-              <div key={block.title} className="flex flex-col gap-4">
+              <div key={block.title} className="space-y-4">
                 <h3 className="text-lg font-medium text-foreground">{block.title}</h3>
                 <ul className="space-y-3 text-sm text-muted">
                   {block.items.map((item) => (
@@ -195,55 +237,31 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       </section>
 
-      <section className="mx-auto mt-24 max-w-5xl rounded-3xl border border-outline/50 bg-surface/80 px-6 py-12 text-center shadow-2xl">
-        <div className="mx-auto flex max-w-3xl flex-col gap-4">
-          <span className="tag self-center">Roadmap</span>
-          <h2 className="text-3xl font-semibold">Upcoming: direct domain purchasing, CI integrations, analytics.</h2>
-          <p className="text-muted">
-            The dashboard already scaffolds domain purchase requests — submit your ideal names and we will handle the
-            registrar side soon. Expect GitHub Actions integration, team roles, and observability modules next.
-          </p>
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
-            <Link
-              className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-medium text-background transition hover:-translate-y-0.5"
-              href="/signup"
-            >
-              Join the beta
-            </Link>
-            <Link
-              className="inline-flex items-center gap-2 rounded-full border border-outline/70 px-6 py-3 text-sm font-medium text-foreground/80 transition hover:border-accent"
-              href="https://github.com/noesisai-lab"
-              target="_blank"
-              rel="noopener"
-            >
-              Contribute on GitHub
-            </Link>
-          </div>
-        </div>
+      <section className="mx-auto mt-24 max-w-6xl px-6">
+        <Card className="border-border/40 bg-card/70">
+          <CardContent className="grid gap-10 px-8 py-10 md:grid-cols-[2fr,1fr] md:items-center md:px-12">
+            <div className="space-y-4">
+              <Badge variant="outline" className="w-fit border-border/40 bg-transparent px-4 py-1 text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
+                Join the movement
+              </Badge>
+              <h2 className="text-3xl font-semibold md:text-4xl">
+                Noesis Hosting is crafted for human-centric AI builders.
+              </h2>
+              <p className="text-sm text-muted">
+                Founded in Milan by Mattia Beltrami, Noesis AI builds open infrastructure that feels deliberate, honest, and elegant. We believe the future of intelligence should be hosted with care.
+              </p>
+            </div>
+            <div className="space-y-3 text-sm text-muted">
+              <p>👉 GitHub: github.com/noesisai-lab</p>
+              <p>✉️ Contact: info@noesisai.org</p>
+              <p>📜 License: Noesis AI License Agreement</p>
+            </div>
+          </CardContent>
+        </Card>
       </section>
-
-      <footer className="mx-auto mt-28 flex max-w-6xl flex-col gap-6 px-6 pb-10">
-        <div className="flex flex-col gap-2 text-sm text-muted md:flex-row md:items-center md:justify-between">
-          <div>Noesis Hosting is part of the open research initiative Noesis AI (Milan, Italy).</div>
-          <div className="flex gap-4 text-muted">
-            <Link className="hover:text-accent" href="/terms">
-              Terms of Use
-            </Link>
-            <Link className="hover:text-accent" href="/privacy">
-              Privacy Notice
-            </Link>
-            <a className="hover:text-accent" href="mailto:info@noesisai.org">
-              info@noesisai.org
-            </a>
-          </div>
-        </div>
-        <div className="text-xs text-muted/70">
-          © {new Date().getFullYear()} Noesis AI. Crafted contemporaneously with the open-source AGI manifesto.
-        </div>
-      </footer>
     </main>
   );
 }

@@ -75,9 +75,14 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <main className="mx-auto min-h-screen max-w-6xl space-y-8 px-6 pb-20 pt-16">
+    <main className="mx-auto min-h-screen max-w-6xl space-y-10 px-6 pb-20 pt-16">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <h1 className="text-2xl font-semibold text-foreground">Noesis Hosting Control Center</h1>
+        <div className="space-y-1">
+          <h1 className="text-3xl font-semibold text-foreground">Noesis Hosting control centre</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage deployments, domains, and security for every static experience.
+          </p>
+        </div>
         <LogoutButton />
       </div>
       <DashboardClient

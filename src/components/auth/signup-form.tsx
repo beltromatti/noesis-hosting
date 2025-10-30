@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export function SignupForm() {
   const router = useRouter();
@@ -41,72 +45,77 @@ export function SignupForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground" htmlFor="fullName">
+        <Label htmlFor="fullName" className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
           Full name
-        </label>
-        <input
+        </Label>
+        <Input
           id="fullName"
           value={fullName}
           onChange={(event) => setFullName(event.target.value)}
           required
-          className="w-full rounded-2xl border border-outline/60 bg-card/60 px-4 py-3 text-sm text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/40"
           placeholder="Ada Lovelace"
+          className="h-12 rounded-2xl border-border/60 bg-card/60 text-sm text-foreground placeholder:text-muted-foreground/70"
         />
       </div>
       <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground" htmlFor="email">
+        <Label htmlFor="email" className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
           Email
-        </label>
-        <input
+        </Label>
+        <Input
           id="email"
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           required
-          className="w-full rounded-2xl border border-outline/60 bg-card/60 px-4 py-3 text-sm text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/40"
           placeholder="you@example.com"
+          className="h-12 rounded-2xl border-border/60 bg-card/60 text-sm text-foreground placeholder:text-muted-foreground/70"
         />
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground" htmlFor="password">
+          <Label htmlFor="password" className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
             Password
-          </label>
-          <input
+          </Label>
+          <Input
             id="password"
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required
             minLength={8}
-            className="w-full rounded-2xl border border-outline/60 bg-card/60 px-4 py-3 text-sm text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/40"
             placeholder="••••••••"
+            className="h-12 rounded-2xl border-border/60 bg-card/60 text-sm text-foreground placeholder:text-muted-foreground/70"
           />
         </div>
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground" htmlFor="confirmPassword">
+          <Label htmlFor="confirmPassword" className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
             Confirm password
-          </label>
-          <input
+          </Label>
+          <Input
             id="confirmPassword"
             type="password"
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
             required
             minLength={8}
-            className="w-full rounded-2xl border border-outline/60 bg-card/60 px-4 py-3 text-sm text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/40"
             placeholder="••••••••"
+            className="h-12 rounded-2xl border-border/60 bg-card/60 text-sm text-foreground placeholder:text-muted-foreground/70"
           />
         </div>
       </div>
-      {error && <p className="rounded-xl border border-danger/50 bg-danger/10 px-3 py-2 text-sm text-danger">{error}</p>}
-      <button
+      {error ? (
+        <Alert variant="destructive" className="border-danger/40 bg-danger/10 text-sm text-danger">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : null}
+      <Button
         type="submit"
+        size="lg"
         disabled={loading}
-        className="w-full rounded-full bg-accent px-4 py-3 text-sm font-semibold text-background transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-full text-sm font-semibold tracking-wide disabled:cursor-not-allowed"
       >
         {loading ? "Creating account…" : "Create account"}
-      </button>
+      </Button>
     </form>
   );
 }

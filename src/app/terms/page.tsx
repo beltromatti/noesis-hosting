@@ -1,3 +1,6 @@
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
 export const metadata = {
   title: "Terms of Use — Noesis Hosting",
 };
@@ -58,23 +61,25 @@ const sections = [
 export default function TermsPage() {
   return (
     <main className="mx-auto max-w-4xl px-6 pb-24 pt-24">
-      <div className="glass-panel glow-border space-y-8 p-10">
-        <header className="space-y-3">
-          <span className="tag">Legal</span>
-          <h1 className="text-3xl font-semibold md:text-4xl">Terms of Use</h1>
-          <p className="text-sm text-muted">
+      <Card className="border-border/50 bg-card/75 shadow-[0_40px_120px_-90px_rgba(0,0,0,0.65)] backdrop-blur">
+        <CardHeader className="space-y-4">
+          <Badge variant="outline" className="w-fit border-border/40 bg-transparent px-4 py-1 text-[11px] uppercase tracking-[0.3em] text-muted-foreground">
+            Legal
+          </Badge>
+          <CardTitle className="text-3xl font-semibold md:text-4xl">Terms of Use</CardTitle>
+          <CardDescription className="text-sm text-muted">
             Effective date: {new Date().toISOString().slice(0, 10)}. These terms govern access to the Noesis Hosting platform.
-          </p>
-        </header>
-        <div className="space-y-6 text-sm leading-relaxed text-muted">
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6 text-sm leading-relaxed text-muted">
           {sections.map((section) => (
             <section key={section.title} className="space-y-2">
               <h2 className="text-lg font-medium text-foreground">{section.title}</h2>
               <p>{section.body}</p>
             </section>
           ))}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </main>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 export function LogoutButton() {
   const [loading, setLoading] = useState(false);
@@ -15,13 +16,15 @@ export function LogoutButton() {
   };
 
   return (
-    <button
+    <Button
       type="button"
-      onClick={handleLogout}
+      variant="ghost"
+      size="sm"
       disabled={loading}
-      className="rounded-full border border-outline/70 px-4 py-2 text-xs font-medium text-muted transition hover:border-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+      className="h-9 rounded-full border border-border/60 bg-transparent px-4 text-xs font-medium tracking-wide text-muted-foreground transition hover:border-border hover:bg-card/50 hover:text-foreground"
+      onClick={handleLogout}
     >
       {loading ? "Signing out…" : "Sign out"}
-    </button>
+    </Button>
   );
 }

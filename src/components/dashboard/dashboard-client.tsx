@@ -68,7 +68,8 @@ export function DashboardClient({ user, freeDomainSuffix, edgeIp, sites }: Dashb
   const handleCreateSite = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setCreateError(null);
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const name = form.get("name");
     const customDomain = (form.get("customDomain") as string) || undefined;
     const requestPurchase = form.get("requestDomainPurchase") === "on";
@@ -83,7 +84,7 @@ export function DashboardClient({ user, freeDomainSuffix, edgeIp, sites }: Dashb
         const payload = await response.json();
         throw new Error(payload.error ?? "Unable to create site");
       }
-      (event.currentTarget as HTMLFormElement).reset();
+      formElement.reset();
       startTransition(() => router.refresh());
     } catch (error) {
       setCreateError((error as Error).message);

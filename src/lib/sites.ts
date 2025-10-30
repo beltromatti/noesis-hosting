@@ -70,6 +70,20 @@ export async function createSiteForUser(userId: string, input: CreateSiteInput) 
     throw new Error("Site name is required.");
   }
 
+  const existingWithName = await prisma.site.findFirst({
+    where: {
+      userId,
+      name: {
+        equals: trimmedName,
+        mode: "insensitive",
+      },
+    },
+    select: { id: true },
+  });
+  if (existingWithName) {
+    throw new Error("You already have a site with this name. Choose a different label to keep things organized.");
+  }
+
   const normalizedCustomDomain = input.customDomain?.trim().toLowerCase();
   if (normalizedCustomDomain && normalizedCustomDomain.endsWith(env.PLATFORM_FREE_DOMAIN)) {
     throw new Error(`Custom domains cannot use the reserved ${env.PLATFORM_FREE_DOMAIN} sandbox namespace.`);

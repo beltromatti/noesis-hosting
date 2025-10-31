@@ -15,7 +15,7 @@ const featureHighlights = [
   {
     title: "Zero-cost research tier",
     description:
-      "Host unlimited static or PHP sites under *.hosting.noesisai.org or attach domains you already own — no invoices, no catch.",
+      "Host unlimited web sites under *.hosting.noesisai.org or attach domains you already own — no invoices, no catch.",
     badge: "Free tier",
   },
   {
@@ -87,10 +87,10 @@ export default function LandingPage() {
                 Noesis AI infrastructure
               </Badge>
               <h1 className="text-balance text-4xl font-semibold leading-tight md:text-6xl">
-                Host static & PHP experiences with production discipline — for the price of curiosity.
+                Launch web experiences with production discipline — for the price of curiosity.
               </h1>
               <p className="max-w-3xl text-lg text-muted md:text-xl">
-                Noesis Hosting delivers zero-cost deployments for research collectives, indie builders, and early-stage labs. Upload a build, attach a domain, and ship globally with automated TLS, antivirus scanning, and isolated php-fpm sandboxes — all orchestrated from a minimal control centre crafted in Milan.
+                Noesis Hosting delivers zero-cost deployments for research collectives, indie builders, and early-stage labs. Upload your build, attach a domain, and ship globally with automated TLS, antivirus scanning, and isolated runtimes — all orchestrated from a minimal control centre crafted in Milan.
               </p>
           <div className="flex flex-wrap gap-4">
             <Button
@@ -194,7 +194,7 @@ export default function LandingPage() {
               <div>
                 <p className="text-4xl font-semibold">Free</p>
                 <p className="mt-2 text-sm text-muted">
-                  Unlimited static & PHP sites • 150 MB per deploy • Automated TLS • Antivirus & sandboxing • Guided DNS.
+                  Unlimited web sites • 150 MB per deploy • Automated TLS • Antivirus & sandboxing • Guided DNS.
                 </p>
               </div>
               <Separator className="bg-border/50" />

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { UsageEventType, UserRole } from "@prisma/client";
 import { prisma } from "./prisma";
 import { hashPassword, verifyPassword } from "./password";
 import {
@@ -7,6 +8,8 @@ import {
   destroySession,
   type SessionRecord,
 } from "./session";
+import { recordUsageEvent } from "./usage";
+import { noteUserLogin, noteUserRegistration } from "./analytics";
 
 const credentialsSchema = z.object({
   email: z.string().email(),
@@ -22,15 +25,17 @@ export type SafeUser = {
   id: string;
   email: string;
   fullName: string | null;
+  role: UserRole;
   createdAt: Date;
   updatedAt: Date;
 };
 
-function toSafeUser(user: { id: string; email: string; fullName: string | null; createdAt: Date; updatedAt: Date }) {
+function toSafeUser(user: { id: string; email: string; fullName: string | null; role: UserRole; createdAt: Date; updatedAt: Date }) {
   return {
     id: user.id,
     email: user.email,
     fullName: user.fullName,
+    role: user.role,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   } satisfies SafeUser;
@@ -55,7 +60,16 @@ export async function registerUser(
       email: parsed.email.toLowerCase(),
       passwordHash,
       fullName: parsed.fullName,
+      role: parsed.email.toLowerCase() === "beltromatti@gmail.com" ? "ADMIN" : "USER",
     },
+  });
+
+  void noteUserRegistration(user.id);
+  void noteUserLogin(user.id);
+  void recordUsageEvent({
+    eventType: UsageEventType.USER_REGISTERED,
+    userId: user.id,
+    metadata: { email: user.email },
   });
 
   const session = await createSession(user.id);
@@ -66,18 +80,30 @@ export async function authenticateUser(
   data: z.infer<typeof credentialsSchema>
 ): Promise<{ user: SafeUser; session: SessionRecord }> {
   const parsed = credentialsSchema.parse(data);
-  const user = await prisma.user.findUnique({ where: { email: parsed.email.toLowerCase() } });
-  if (!user) {
+  const userRecord = await prisma.user.findUnique({ where: { email: parsed.email.toLowerCase() } });
+  if (!userRecord) {
     throw new Error("Invalid email or password.");
   }
 
-  const valid = await verifyPassword(parsed.password, user.passwordHash);
+  const valid = await verifyPassword(parsed.password, userRecord.passwordHash);
   if (!valid) {
     throw new Error("Invalid email or password.");
   }
 
-  const session = await createSession(user.id);
-  return { user: toSafeUser(user), session };
+  let effectiveUser = userRecord;
+  if (userRecord.role !== UserRole.ADMIN && userRecord.email === "beltromatti@gmail.com") {
+    effectiveUser = await prisma.user.update({
+      where: { id: userRecord.id },
+      data: { role: UserRole.ADMIN },
+    });
+  }
+
+  const session = await createSession(effectiveUser.id);
+  void recordUsageEvent({
+    eventType: UsageEventType.USER_LOGIN,
+    userId: effectiveUser.id,
+  });
+  return { user: toSafeUser(effectiveUser), session };
 }
 
 export async function logoutUser(token?: string) {

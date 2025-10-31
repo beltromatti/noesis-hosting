@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   Activity,
@@ -52,6 +53,7 @@ export type DashboardSite = {
   name: string;
   slug: string;
   status: string;
+  runtime: string;
   maxUploadSize: number;
   lastDeploymentAt: string | null;
   createdAt: string;
@@ -65,6 +67,16 @@ export type DashboardSite = {
       enabled?: boolean;
       geoBlock?: string[];
     };
+  } | null;
+  securityProfile: {
+    runtime: string;
+    cpuLimitPercent: number;
+    memoryLimitMb: number;
+    storageLimitMb: number;
+    processLimit: number;
+    lastScanAt: string | null;
+    lastScanStatus: string;
+    lastScanNotes: string | null;
   } | null;
   domains: Array<{
     id: string;
@@ -124,6 +136,24 @@ const DNS_STATUS_MAP: Record<
   PROXIED: { label: "Proxied", className: "bg-blue-500/15 text-blue-200 border-blue-500/40" },
   MISMATCH: { label: "Mismatch", className: "bg-amber-500/15 text-amber-200 border-amber-500/40" },
   UNRESOLVED: { label: "Unresolved", className: "bg-slate-500/15 text-slate-200 border-slate-400/40" },
+};
+
+const RUNTIME_BADGE: Record<
+  string,
+  { label: string; className: string }
+> = {
+  PHP: { label: "PHP sandbox", className: "border-blue-400/40 bg-blue-500/15 text-blue-100" },
+  STATIC: { label: "Static bundle", className: "border-slate-400/40 bg-slate-500/15 text-slate-100" },
+};
+
+const SCAN_STATUS_BADGE: Record<
+  string,
+  { label: string; className: string }
+> = {
+  PASS: { label: "Pass", className: "border-emerald-400/40 bg-emerald-500/15 text-emerald-100" },
+  WARN: { label: "Warn", className: "border-amber-400/40 bg-amber-500/15 text-amber-100" },
+  FAIL: { label: "Fail", className: "border-red-500/50 bg-red-500/15 text-red-100" },
+  UNKNOWN: { label: "Pending scan", className: "border-slate-400/40 bg-slate-500/15 text-slate-200" },
 };
 
 export function DashboardClient({ user, freeDomainSuffix, edgeIp, sites }: DashboardClientProps) {
@@ -469,7 +499,7 @@ function CreateSiteCard({ onSubmit, freeDomainSuffix, createError, isSubmitting 
       <CardHeader className="space-y-4">
         <CardTitle className="text-2xl">Provision a new site</CardTitle>
         <CardDescription>
-          Each site receives an isolated nginx configuration, storage directory, and sandbox domain under{" "}
+          Each site receives an isolated nginx configuration, optional php-fpm sandbox, dedicated storage, and a sandbox domain under{" "}
           <span className="text-foreground">*.{freeDomainSuffix}</span>.
         </CardDescription>
       </CardHeader>
@@ -517,7 +547,10 @@ function CreateSiteCard({ onSubmit, freeDomainSuffix, createError, isSubmitting 
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="space-y-1 text-xs text-muted-foreground">
               <p>• Free sandbox URLs: <span className="text-foreground">*.{freeDomainSuffix}</span></p>
-              <p>• Maximum archive size: 150 MB per deploy</p>
+              <p>• Maximum archive size: 150 MB compressed (storage quota enforced on extract)</p>
+              <p>
+                • Entry point: package must contain an <code>index.html</code> or <code>index.php</code> at the root
+              </p>
             </div>
             <Button
               type="submit"
@@ -578,6 +611,14 @@ function SiteAccordionItem({
   );
 
   const statusStyle = STATUS_MAP[site.status] ?? STATUS_MAP.PENDING;
+  const runtimeMeta = RUNTIME_BADGE[site.runtime] ?? RUNTIME_BADGE.STATIC;
+  const securityProfile = site.securityProfile;
+  const scanStatus = securityProfile?.lastScanStatus ?? "UNKNOWN";
+  const scanMeta = SCAN_STATUS_BADGE[scanStatus] ?? SCAN_STATUS_BADGE.UNKNOWN;
+  const scanTimestamp = securityProfile?.lastScanAt ? formatDateTime(securityProfile.lastScanAt) : "Awaiting scan";
+  const storageBudget = securityProfile?.storageLimitMb ?? Math.round(site.maxUploadSize / (1024 * 1024));
+  const cpuBudget = securityProfile?.cpuLimitPercent ?? 20;
+  const memoryBudget = securityProfile?.memoryLimitMb ?? 256;
 
   return (
     <AccordionItem value={site.id} className="rounded-3xl border border-border/40 bg-card/70 px-2 py-1">
@@ -633,14 +674,45 @@ function SiteAccordionItem({
                   <span className="text-foreground">{sandboxDomain}</span>. You can promote any verified domain to primary.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="grid gap-6 md:grid-cols-2">
+              <CardContent className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                 <InfoBlock label="Created" value={formatDateTime(site.createdAt)} />
                 <InfoBlock
                   label="Last deployment"
                   value={site.lastDeploymentAt ? formatDateTime(site.lastDeploymentAt) : "Not deployed yet"}
                 />
+                <InfoBlock
+                  label="Runtime"
+                  value={
+                    <Badge
+                      variant="outline"
+                      className={cn("border px-3 py-[5px] text-[11px] uppercase tracking-[0.3em]", runtimeMeta.className)}
+                    >
+                      {runtimeMeta.label}
+                    </Badge>
+                  }
+                />
+                <InfoBlock
+                  label="Security scan"
+                  value={
+                    <div className="space-y-1">
+                      <Badge
+                        variant="outline"
+                        className={cn("border px-3 py-[5px] text-[11px] uppercase tracking-[0.3em]", scanMeta.className)}
+                      >
+                        {scanMeta.label}
+                      </Badge>
+                      <p className="text-[11px] text-muted-foreground">{scanTimestamp}</p>
+                      {securityProfile?.lastScanNotes ? (
+                        <p className="text-[11px] text-muted-foreground/80">{securityProfile.lastScanNotes}</p>
+                      ) : null}
+                    </div>
+                  }
+                />
+                <InfoBlock
+                  label="Resource policy"
+                  value={`${cpuBudget}% CPU · ${memoryBudget} MB RAM · ${storageBudget} MB storage`}
+                />
                 <InfoBlock label="Slug" value={site.slug} />
-                <InfoBlock label="Upload limit" value={`${Math.round(site.maxUploadSize / (1024 * 1024))} MB`} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -693,11 +765,11 @@ function SiteAccordionItem({
   );
 }
 
-function InfoBlock({ label, value }: { label: string; value: string }) {
+function InfoBlock({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="rounded-2xl border border-border/40 bg-card/50 p-4">
       <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">{label}</p>
-      <p className="mt-2 text-sm text-foreground">{value}</p>
+      <div className="mt-2 text-sm text-foreground">{value}</div>
     </div>
   );
 }
@@ -712,6 +784,7 @@ function DeploySection({ site, message, onDeploy }: DeploySectionProps) {
   const [file, setFile] = useState<File | null>(null);
   const [note, setNote] = useState("");
   const [uploading, setUploading] = useState(false);
+  const storageLimitMb = site.securityProfile?.storageLimitMb ?? Math.round(site.maxUploadSize / (1024 * 1024));
 
   const isSuccess = message?.tone === "success";
   const isError = message?.tone === "error";
@@ -736,7 +809,7 @@ function DeploySection({ site, message, onDeploy }: DeploySectionProps) {
           Deploy a new version
         </CardTitle>
         <CardDescription>
-          Upload a zipped static build. We scan with ClamAV before extraction, then provision nginx with your security presets.
+          Upload a zipped project with an <code>index.html</code> or <code>index.php</code> entry point. We deep scan the archive and extracted payload before activating nginx and php-fpm.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -778,7 +851,7 @@ function DeploySection({ site, message, onDeploy }: DeploySectionProps) {
             />
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-            <span>Maximum archive size: {Math.round(site.maxUploadSize / (1024 * 1024))} MB</span>
+            <span>Maximum extracted size: {storageLimitMb} MB</span>
             <Button
               type="submit"
               disabled={uploading || !file}
@@ -1087,6 +1160,32 @@ function SecuritySection({ site, onSecurityToggle, message }: SecuritySectionPro
           >
             <AlertDescription>{message.text}</AlertDescription>
           </Alert>
+        ) : null}
+        {site.securityProfile ? (
+          <div className="rounded-2xl border border-border/40 bg-card/40 p-4 text-sm text-muted-foreground">
+            <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground/80">Runtime isolation</p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <Badge
+                variant="outline"
+                className={cn(
+                  "border px-3 py-[5px] text-[11px] uppercase tracking-[0.3em]",
+                  (RUNTIME_BADGE[site.securityProfile.runtime] ?? RUNTIME_BADGE.STATIC).className,
+                )}
+              >
+                {(RUNTIME_BADGE[site.securityProfile.runtime] ?? RUNTIME_BADGE.STATIC).label}
+              </Badge>
+              <span>
+                {site.securityProfile.cpuLimitPercent}% CPU · {site.securityProfile.memoryLimitMb} MB RAM ·{" "}
+                {site.securityProfile.storageLimitMb} MB storage · {site.securityProfile.processLimit} PHP workers
+              </span>
+            </div>
+            <p className="mt-2 text-[11px] text-muted-foreground/80">
+              Last scan: {site.securityProfile.lastScanAt ? formatDateTime(site.securityProfile.lastScanAt) : "Pending"}
+            </p>
+            {site.securityProfile.lastScanNotes ? (
+              <p className="text-[11px] text-muted-foreground/70">{site.securityProfile.lastScanNotes}</p>
+            ) : null}
+          </div>
         ) : null}
         <div className="space-y-4">
           {options.map((option) => (

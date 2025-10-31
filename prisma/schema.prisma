@@ -42,15 +42,51 @@ enum DomainPurchaseStatus {
   REJECTED
 }
 
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum SiteRuntime {
+  STATIC
+  PHP
+}
+
+enum SecurityScanStatus {
+  UNKNOWN
+  PASS
+  WARN
+  FAIL
+}
+
+enum UsageEventType {
+  USER_REGISTERED
+  USER_LOGIN
+  USER_LOGIN_FAILED
+  SITE_CREATED
+  SITE_DEPLOYED
+  SITE_DEPLOYMENT_FAILED
+  SITE_PAUSED
+  SITE_RESUMED
+  SITE_DELETED
+  DOMAIN_UPDATED
+  SECURITY_UPDATED
+  DOMAIN_REQUESTED
+  DOMAIN_VERIFICATION_FAILED
+}
+
 model User {
   id           String     @id @default(cuid())
   email        String     @unique
   passwordHash String
   fullName     String?
+  role         UserRole   @default(USER)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   sites        Site[]
   sessions     Session[]
+  usageEvents  UsageEvent[]
+  analytics    UserAnalytics?
 }
 
 model Session {
@@ -69,6 +105,7 @@ model Site {
   name             String
   slug             String        @unique
   status           SiteStatus    @default(PENDING)
+  runtime          SiteRuntime   @default(STATIC)
   storagePath      String
   maxUploadSize    Int           @default(157286400)
   lastDeploymentAt DateTime?
@@ -78,6 +115,9 @@ model Site {
   domains          SiteDomain[]
   deployments      Deployment[]
   purchaseRequests DomainPurchaseRequest[]
+  usageEvents      UsageEvent[]
+  analytics        SiteAnalytics?
+  securityProfile  SiteSecurityProfile?
 }
 
 model SiteDomain {
@@ -115,4 +155,85 @@ model DomainPurchaseRequest {
   updatedAt DateTime              @updatedAt
 
   @@index([siteId, status])
+}
+
+model UserAnalytics {
+  id                  String   @id @default(cuid())
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String   @unique
+  totalSites          Int      @default(0)
+  activeSites         Int      @default(0)
+  pausedSites         Int      @default(0)
+  totalDeployments    Int      @default(0)
+  lastLoginAt         DateTime?
+  lastLoginIp         String?
+  failedLoginAttempts Int      @default(0)
+  abuseReports        Int      @default(0)
+  riskScore           Int      @default(0)
+  riskReasons         String[]
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([riskScore, updatedAt])
+}
+
+model SiteAnalytics {
+  id                       String     @id @default(cuid())
+  site                     Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  siteId                   String     @unique
+  totalDeployments         Int        @default(0)
+  successfulDeployments    Int        @default(0)
+  failedDeployments        Int        @default(0)
+  totalUploads             Int        @default(0)
+  totalBytesUploaded       BigInt     @default(0)
+  lastDeploymentAt         DateTime?
+  lastDeploymentSizeBytes  BigInt?
+  lastMalwareScanAt        DateTime?
+  lastMalwareScanPassed    Boolean?
+  dnsVerified              Boolean    @default(false)
+  proxiedThroughCloudflare Boolean    @default(false)
+  pausedAt                 DateTime?
+  lastStatus               SiteStatus?
+  runtime                  SiteRuntime?
+  riskScore                Int        @default(0)
+  riskReasons              String[]
+  createdAt                DateTime   @default(now())
+  updatedAt                DateTime   @updatedAt
+
+  @@index([riskScore, updatedAt])
+  @@index([dnsVerified, updatedAt])
+}
+
+model SiteSecurityProfile {
+  id                String              @id @default(cuid())
+  site              Site                @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  siteId            String              @unique
+  runtime           SiteRuntime         @default(STATIC)
+  isolated          Boolean             @default(true)
+  cpuLimitPercent   Int                 @default(20)
+  memoryLimitMb     Int                 @default(256)
+  storageLimitMb    Int                 @default(200)
+  processLimit      Int                 @default(8)
+  lastScanAt        DateTime?
+  lastScanStatus    SecurityScanStatus  @default(UNKNOWN)
+  lastScanNotes     String?
+  phpOpenBaseDir    String?
+  phpDisabledFuncs  String[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+}
+
+model UsageEvent {
+  id        String         @id @default(cuid())
+  eventType UsageEventType
+  user      User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId    String?
+  site      Site?          @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  siteId    String?
+  metadata  Json?
+  createdAt DateTime       @default(now())
+
+  @@index([eventType, createdAt])
+  @@index([userId, createdAt])
+  @@index([siteId, createdAt])
 }

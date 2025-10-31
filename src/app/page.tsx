@@ -7,21 +7,21 @@ import { Separator } from "@/components/ui/separator";
 
 const featureHighlights = [
   {
-    title: "Instant static deployments",
+    title: "Instant web deployments",
     description:
-      "Upload a zipped build or connect automation. We scan, extract, and publish globally within seconds.",
+      "Upload a zipped project — we detect index.html or index.php, deep scan the bundle, and publish globally in seconds.",
     badge: "Fast onboarding",
   },
   {
     title: "Zero-cost research tier",
     description:
-      "Host unlimited static sites under *.hosting.noesisai.org or attach domains you already own — no invoices, no catch.",
+      "Host unlimited static or PHP sites under *.hosting.noesisai.org or attach domains you already own — no invoices, no catch.",
     badge: "Free tier",
   },
   {
     title: "Production hardening",
     description:
-      "Antivirus scanning, nginx provisioning, cache headers, and logging are wired in by default for every deploy.",
+      "Antivirus scanning, nginx + php-fpm sandboxing, cache headers, and logging are wired in by default for every deploy.",
     badge: "Secure by design",
   },
 ];
@@ -35,7 +35,7 @@ const workflowSteps = [
   {
     step: "02",
     title: "Upload or automate",
-    copy: "Drop a zipped dist/ folder (150 MB max) or plug in the upcoming CI hooks. Every archive is scanned before extraction.",
+    copy: "Drop a zipped project with an index.html or index.php entry (150 MB max) or plug in the upcoming CI hooks. Every archive is scanned before extraction.",
   },
   {
     step: "03",
@@ -61,9 +61,9 @@ const tutorialSteps = [
   {
     title: "2. Upload your bundle",
     items: [
-      "Compress your static output (dist/, out/, build/).",
+      "Compress your build folder with an index.html or index.php at the root.",
       "Drag & drop — larger archives are rejected to keep the edge fast.",
-      "ClamAV scanning runs before extraction and nginx is provisioned automatically.",
+      "ClamAV scans the archive and extracted payload before nginx/php-fpm are provisioned.",
     ],
   },
   {
@@ -87,10 +87,10 @@ export default function LandingPage() {
                 Noesis AI infrastructure
               </Badge>
               <h1 className="text-balance text-4xl font-semibold leading-tight md:text-6xl">
-                Host static experiences with production discipline — for the price of curiosity.
+                Host static & PHP experiences with production discipline — for the price of curiosity.
               </h1>
               <p className="max-w-3xl text-lg text-muted md:text-xl">
-                Noesis Hosting delivers zero-cost deployments for research collectives, indie builders, and early-stage labs. Upload a build, attach a domain, and ship globally with automated TLS, antivirus scanning, and a minimal control centre crafted in Milan.
+                Noesis Hosting delivers zero-cost deployments for research collectives, indie builders, and early-stage labs. Upload a build, attach a domain, and ship globally with automated TLS, antivirus scanning, and isolated php-fpm sandboxes — all orchestrated from a minimal control centre crafted in Milan.
               </p>
           <div className="flex flex-wrap gap-4">
             <Button
@@ -175,9 +175,9 @@ export default function LandingPage() {
             </CardHeader>
             <CardContent>
               <ul className="space-y-3 text-sm text-muted">
-                <li>• ClamAV scanning runs before every extraction — nothing malicious reaches your edge.</li>
+                <li>• ClamAV scans both the archive and extracted payload — nothing malicious reaches your edge.</li>
                 <li>• Strict MIME validation, enforced HTTPS, and optional access gating per site.</li>
-                <li>• Hardened nginx config with caching and isolation per domain.</li>
+                <li>• Hardened nginx config with per-site php-fpm pools, open_basedir, and resource quotas.</li>
                 <li>• Comprehensive audit history for deployments, DNS updates, and future collaborators.</li>
               </ul>
             </CardContent>
@@ -194,7 +194,7 @@ export default function LandingPage() {
               <div>
                 <p className="text-4xl font-semibold">Free</p>
                 <p className="mt-2 text-sm text-muted">
-                  Unlimited static sites • 150 MB per deploy • Automated TLS • Antivirus scanning • Guided DNS.
+                  Unlimited static & PHP sites • 150 MB per deploy • Automated TLS • Antivirus & sandboxing • Guided DNS.
                 </p>
               </div>
               <Separator className="bg-border/50" />

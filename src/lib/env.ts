@@ -14,6 +14,12 @@ type RawEnv = {
   PLATFORM_CERT_ROOT?: string;
   ACME_ACCOUNT_EMAIL?: string;
   MAX_ARCHIVE_SIZE_MB?: string;
+  PLATFORM_PHP_FPM_POOL_DIR?: string;
+  PLATFORM_PHP_FPM_SOCKET_ROOT?: string;
+  PLATFORM_PHP_FPM_SERVICE?: string;
+  DEFAULT_RUNTIME_CPU_PERCENT?: string;
+  DEFAULT_RUNTIME_MEMORY_MB?: string;
+  DEFAULT_RUNTIME_PROCESS_LIMIT?: string;
 };
 
 const envSchema = z.object({
@@ -35,6 +41,12 @@ const envSchema = z.object({
   PLATFORM_CERT_ROOT: z.string().min(1, "PLATFORM_CERT_ROOT is required"),
   ACME_ACCOUNT_EMAIL: z.string().email("ACME_ACCOUNT_EMAIL must be a valid email"),
   MAX_ARCHIVE_SIZE_MB: z.coerce.number().min(50).max(1024).default(200),
+  PLATFORM_PHP_FPM_POOL_DIR: z.string().min(1, "PLATFORM_PHP_FPM_POOL_DIR is required"),
+  PLATFORM_PHP_FPM_SOCKET_ROOT: z.string().min(1, "PLATFORM_PHP_FPM_SOCKET_ROOT is required"),
+  PLATFORM_PHP_FPM_SERVICE: z.string().min(1, "PLATFORM_PHP_FPM_SERVICE is required"),
+  DEFAULT_RUNTIME_CPU_PERCENT: z.coerce.number().min(5).max(100).default(25),
+  DEFAULT_RUNTIME_MEMORY_MB: z.coerce.number().min(128).max(2048).default(256),
+  DEFAULT_RUNTIME_PROCESS_LIMIT: z.coerce.number().min(2).max(64).default(12),
 });
 
 export const env = envSchema.parse(process.env as RawEnv);
@@ -46,3 +58,9 @@ export const CLOUDFLARE_EMAIL = env.CLOUDFLARE_EMAIL;
 export const CLOUDFLARE_API_KEY = env.CLOUDFLARE_API_KEY;
 export const CERT_ROOT = env.PLATFORM_CERT_ROOT;
 export const ACME_EMAIL = env.ACME_ACCOUNT_EMAIL;
+export const PHP_FPM_POOL_DIR = env.PLATFORM_PHP_FPM_POOL_DIR;
+export const PHP_FPM_SOCKET_ROOT = env.PLATFORM_PHP_FPM_SOCKET_ROOT;
+export const PHP_FPM_SERVICE = env.PLATFORM_PHP_FPM_SERVICE;
+export const DEFAULT_CPU_PERCENT = env.DEFAULT_RUNTIME_CPU_PERCENT;
+export const DEFAULT_MEMORY_LIMIT_MB = env.DEFAULT_RUNTIME_MEMORY_MB;
+export const DEFAULT_PROCESS_LIMIT = env.DEFAULT_RUNTIME_PROCESS_LIMIT;

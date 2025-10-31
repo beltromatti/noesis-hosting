@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import type { Prisma } from "@prisma/client";
+import { DomainType } from "@prisma/client";
+import { ArrowUpRight } from "lucide-react";
 import { getSession } from "@/lib/session";
 import { listSitesForUser } from "@/lib/sites";
 import { env } from "@/lib/env";
@@ -7,6 +9,7 @@ import { checkDomainARecord } from "@/lib/dns";
 import Link from "next/link";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { noteDomainInsight } from "@/lib/analytics";
 
 export const metadata = {
   title: "Dashboard — Noesis Hosting",
@@ -17,10 +20,11 @@ export default async function DashboardPage() {
   if (!session) {
     redirect("/login");
   }
+  const isAdmin = session.user.role === "ADMIN";
 
   const sites = await listSitesForUser(session.userId);
   type ListedSite = Prisma.SiteGetPayload<{
-    include: { domains: true; deployments: true; purchaseRequests: true };
+    include: { domains: true; deployments: true; purchaseRequests: true; securityProfile: true };
   }>;
   const typedSites = sites as ListedSite[];
 
@@ -39,15 +43,46 @@ export default async function DashboardPage() {
 
   const dnsByHostname = new Map(dnsPairs);
 
+  await Promise.all(
+    typedSites.map(async (site) => {
+      const primaryDomain = site.domains.find((domain) => domain.isPrimary) ?? site.domains[0];
+      if (!primaryDomain) return;
+      const dns = dnsByHostname.get(primaryDomain.hostname.toLowerCase());
+      if (!dns) return;
+      const dnsVerified =
+        primaryDomain.type === DomainType.FREE_SUBDOMAIN ||
+        dns.status === "MATCH" ||
+        dns.status === "PROXIED";
+      await noteDomainInsight({
+        siteId: site.id,
+        dnsVerified,
+        proxied: dns.status === "PROXIED" || dns.proxied === true,
+      });
+    }),
+  );
+
   const serializedSites = typedSites.map((site) => ({
     id: site.id,
     name: site.name,
     slug: site.slug,
     status: site.status,
+    runtime: site.runtime,
     maxUploadSize: site.maxUploadSize,
     lastDeploymentAt: site.lastDeploymentAt ? site.lastDeploymentAt.toISOString() : null,
     createdAt: site.createdAt.toISOString(),
     securityConfig: (site.securityConfig as Record<string, unknown>) ?? null,
+    securityProfile: site.securityProfile
+      ? {
+          runtime: site.securityProfile.runtime,
+          cpuLimitPercent: site.securityProfile.cpuLimitPercent,
+          memoryLimitMb: site.securityProfile.memoryLimitMb,
+          storageLimitMb: site.securityProfile.storageLimitMb,
+          processLimit: site.securityProfile.processLimit,
+          lastScanAt: site.securityProfile.lastScanAt ? site.securityProfile.lastScanAt.toISOString() : null,
+          lastScanStatus: site.securityProfile.lastScanStatus,
+          lastScanNotes: site.securityProfile.lastScanNotes,
+        }
+      : null,
     hasArchive: site.deployments.length > 0,
     domains: site.domains.map((domain) => ({
       id: domain.id,
@@ -81,10 +116,21 @@ export default async function DashboardPage() {
         <div className="space-y-1">
           <h1 className="text-3xl font-semibold text-foreground">Noesis Hosting control centre</h1>
           <p className="text-sm text-muted-foreground">
-            Manage deployments, domains, and security for every static experience.
+            Manage deployments, domains, and security for every static or PHP-powered environment.
           </p>
         </div>
-        <LogoutButton />
+        <div className="flex items-center gap-3">
+          {isAdmin && (
+            <Link
+              href="/admin/console"
+              className="inline-flex items-center gap-2 rounded-lg border border-primary/40 px-4 py-2 text-sm font-medium text-primary transition hover:border-primary hover:text-primary/90"
+            >
+              Admin console
+              <ArrowUpRight className="h-4 w-4" />
+            </Link>
+          )}
+          <LogoutButton />
+        </div>
       </div>
       <DashboardClient
         user={{ email: session.user.email, fullName: session.user.fullName }}

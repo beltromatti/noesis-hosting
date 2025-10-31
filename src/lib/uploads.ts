@@ -56,16 +56,48 @@ export async function scanArchive(filePath: string): Promise<ArchiveValidationRe
 export async function extractArchive(source: string, destination: string) {
   await fs.rm(destination, { recursive: true, force: true });
   await fs.mkdir(destination, { recursive: true });
-  await extract(source, { dir: destination });
+  await extract(source, {
+    dir: destination,
+    onEntry: (entry) => {
+      const normalized = path.normalize(entry.fileName);
+      if (normalized.startsWith("..") || path.isAbsolute(normalized)) {
+        throw new Error(`Archive entry resolves outside the deployment root (${entry.fileName}).`);
+      }
+      const entryType = (entry as { type?: string }).type;
+      if (entryType === "SymbolicLink") {
+        throw new Error(`Symbolic links are not permitted (${entry.fileName}).`);
+      }
+    },
+  });
 }
 
-export async function ensureDeploymentHasIndex(destination: string) {
-  const indexPath = path.join(destination, "index.html");
-  const exists = await fs
-    .access(indexPath)
-    .then(() => true)
-    .catch(() => false);
-  if (!exists) {
-    throw new Error("Uploaded site is missing an index.html entry point.");
+export async function scanPath(target: string): Promise<ArchiveValidationResult> {
+  const scanners: Array<{ cmd: string; args: string[] }> = [
+    { cmd: "clamdscan", args: ["--no-summary", "--recursive", target] },
+    { cmd: "clamscan", args: ["--no-summary", "-r", target] },
+  ];
+
+  for (const scanner of scanners) {
+    try {
+      const { stdout } = await execFileAsync(scanner.cmd, scanner.args);
+      if (/OK$/m.test(stdout.trim())) {
+        return { ok: true };
+      }
+      return { ok: false, message: stdout };
+    } catch (error) {
+      const err = error as NodeJS.ErrnoException & { stdout?: string };
+      if (err.code === "ENOENT") {
+        continue;
+      }
+      if (typeof err.stdout === "string" && err.stdout.includes("FOUND")) {
+        return { ok: false, message: err.stdout };
+      }
+      return { ok: false, message: err.message ?? "Unknown scanner error" };
+    }
   }
+
+  return {
+    ok: false,
+    message: "No antivirus engine available. Install ClamAV (clamdscan or clamscan).",
+  };
 }

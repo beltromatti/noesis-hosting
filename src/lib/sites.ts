@@ -726,16 +726,16 @@ function buildNginxServerBlock(
         try_files $uri $uri/ /index.html;
     }
 
-    location ~* \.(?:css|js|json|txt|xml|ico|png|jpg|jpeg|gif|webp|svg|woff2?)$ {
+    location ~* \\.(?:css|js|json|txt|xml|ico|png|jpg|jpeg|gif|webp|svg|woff2?)$ {
         expires 30d;
         add_header Cache-Control "public, immutable";
     }
 
-    location ~ /\.well-known/acme-challenge/ {
+    location ~ /\\.well-known/acme-challenge/ {
         allow all;
     }
 
-    location ~ /\.(?!well-known).* {
+    location ~ /\\.(?!well-known).* {
         deny all;
     }${phpBlock}
 }`;
@@ -780,16 +780,16 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
-    location ~* \.(?:css|js|json|txt|xml|ico|png|jpg|jpeg|gif|webp|svg|woff2?)$ {
+    location ~* \\.(?:css|js|json|txt|xml|ico|png|jpg|jpeg|gif|webp|svg|woff2?)$ {
         expires 30d;
         add_header Cache-Control "public, immutable";
     }
 
-    location ~ /\.well-known/acme-challenge/ {
+    location ~ /\\.well-known/acme-challenge/ {
         allow all;
     }
 
-    location ~ /\.(?!well-known).* {
+    location ~ /\\.(?!well-known).* {
         deny all;
     }${phpBlock}
 }`;

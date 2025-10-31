@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "SiteRuntime" ADD VALUE IF NOT EXISTS 'SPA';

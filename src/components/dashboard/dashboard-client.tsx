@@ -138,11 +138,9 @@ const DNS_STATUS_MAP: Record<
   UNRESOLVED: { label: "Unresolved", className: "bg-slate-500/15 text-slate-200 border-slate-400/40" },
 };
 
-const RUNTIME_BADGE: Record<
-  string,
-  { label: string; className: string }
-> = {
+const RUNTIME_BADGE: Record<string, { label: string; className: string }> = {
   PHP: { label: "PHP sandbox", className: "border-blue-400/40 bg-blue-500/15 text-blue-100" },
+  SPA: { label: "Front-end app", className: "border-purple-400/40 bg-purple-500/15 text-purple-100" },
   STATIC: { label: "Static bundle", className: "border-slate-400/40 bg-slate-500/15 text-slate-100" },
 };
 
@@ -1099,6 +1097,11 @@ function SecuritySection({ site, onSecurityToggle, message }: SecuritySectionPro
     firewallEnabled: site.securityConfig?.firewall?.enabled ?? true,
   };
 
+  const profileRuntime = site.securityProfile?.runtime ?? site.runtime;
+  const profileBadge = RUNTIME_BADGE[profileRuntime] ?? RUNTIME_BADGE.STATIC;
+  const profileProcessLimit = site.securityProfile?.processLimit ?? 0;
+  const phpWorkerSummary = profileProcessLimit > 0 ? `${profileProcessLimit} PHP workers` : "PHP execution disabled";
+
   const isError = message?.tone === "error";
   const isSuccess = message?.tone === "success";
 
@@ -1167,16 +1170,13 @@ function SecuritySection({ site, onSecurityToggle, message }: SecuritySectionPro
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <Badge
                 variant="outline"
-                className={cn(
-                  "border px-3 py-[5px] text-[11px] uppercase tracking-[0.3em]",
-                  (RUNTIME_BADGE[site.securityProfile.runtime] ?? RUNTIME_BADGE.STATIC).className,
-                )}
+                className={cn("border px-3 py-[5px] text-[11px] uppercase tracking-[0.3em]", profileBadge.className)}
               >
-                {(RUNTIME_BADGE[site.securityProfile.runtime] ?? RUNTIME_BADGE.STATIC).label}
+                {profileBadge.label}
               </Badge>
               <span>
                 {site.securityProfile.cpuLimitPercent}% CPU · {site.securityProfile.memoryLimitMb} MB RAM ·{" "}
-                {site.securityProfile.storageLimitMb} MB storage · {site.securityProfile.processLimit} PHP workers
+                {site.securityProfile.storageLimitMb} MB storage · {phpWorkerSummary}
               </span>
             </div>
             <p className="mt-2 text-[11px] text-muted-foreground/80">

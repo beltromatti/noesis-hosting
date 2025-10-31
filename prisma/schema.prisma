@@ -49,6 +49,7 @@ enum UserRole {
 
 enum SiteRuntime {
   STATIC
+  SPA
   PHP
 }
 

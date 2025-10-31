@@ -3,7 +3,13 @@ import { promises as fs } from "fs";
 import { SecurityScanStatus, SiteRuntime, SiteStatus, UsageEventType } from "@prisma/client";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { analyzeDeploymentTree, getSiteForUser, refreshNginxForSite } from "@/lib/sites";
+import {
+  analyzeDeploymentTree,
+  determineRuntimeFromAnalysis,
+  getRuntimePreset,
+  getSiteForUser,
+  refreshNginxForSite,
+} from "@/lib/sites";
 import { extractArchive, persistArchiveTemp, scanArchive, scanPath } from "@/lib/uploads";
 import { noteDeploymentResult, noteSiteStatusChange } from "@/lib/analytics";
 import { recordUsageEvent } from "@/lib/usage";
@@ -85,7 +91,7 @@ export async function POST(
       throw new Error("Deployment must include an index.html or index.php entry point at the root.");
     }
 
-    deploymentRuntime = analysis.entryPoint === "index.php" ? SiteRuntime.PHP : SiteRuntime.STATIC;
+    deploymentRuntime = determineRuntimeFromAnalysis(analysis);
 
     const storageLimitMb = site.securityProfile?.storageLimitMb ?? env.MAX_ARCHIVE_SIZE_MB;
     const storageLimitBytes = storageLimitMb * 1024 * 1024;
@@ -109,11 +115,17 @@ export async function POST(
       throw new Error(contentScan.message ?? "Malware detected in extracted archive.");
     }
     scanStatus = SecurityScanStatus.PASS;
-    if (analysis.phpDetected && deploymentRuntime === SiteRuntime.STATIC) {
+    scanNotes = undefined;
+    if (analysis.phpDetected && deploymentRuntime !== SiteRuntime.PHP) {
       scanStatus = SecurityScanStatus.WARN;
-      scanNotes = "PHP assets detected but runtime remains static. Execution is blocked.";
-    } else {
-      scanNotes = undefined;
+      scanNotes = "PHP assets detected but runtime is sandboxed without execution.";
+    } else if (
+      deploymentRuntime === SiteRuntime.SPA &&
+      analysis.largeJsFiles === 0 &&
+      analysis.totalJsBytes < 120 * 1024
+    ) {
+      scanStatus = SecurityScanStatus.WARN;
+      scanNotes = "SPA runtime classified with minimal bundle footprint; review deployed assets.";
     }
 
     await fs.rm(tmpPath, { force: true });
@@ -141,6 +153,19 @@ export async function POST(
         },
       });
 
+      const preset = getRuntimePreset(deploymentRuntime);
+      const enforcedStorage = Math.max(preset.storage, site.securityProfile?.storageLimitMb ?? preset.storage);
+      const phpDisabledFuncs = site.securityProfile?.phpDisabledFuncs ?? [
+        "exec",
+        "shell_exec",
+        "passthru",
+        "system",
+        "proc_open",
+        "popen",
+        "pcntl_exec",
+      ];
+      const phpOpenBaseDir = site.securityProfile?.phpOpenBaseDir ?? site.storagePath;
+
       await tx.siteSecurityProfile.upsert({
         where: { siteId: site.id },
         create: {
@@ -149,12 +174,26 @@ export async function POST(
           lastScanAt: new Date(),
           lastScanStatus: scanStatus,
           lastScanNotes: scanNotes ?? null,
+          cpuLimitPercent: preset.cpu,
+          memoryLimitMb: preset.memory,
+          storageLimitMb: enforcedStorage,
+          processLimit: preset.process,
+          isolated: preset.isolated,
+          phpOpenBaseDir,
+          phpDisabledFuncs,
         },
         update: {
           runtime: deploymentRuntime,
           lastScanAt: new Date(),
           lastScanStatus: scanStatus,
           lastScanNotes: scanNotes ?? null,
+          cpuLimitPercent: preset.cpu,
+          memoryLimitMb: preset.memory,
+          storageLimitMb: enforcedStorage,
+          processLimit: preset.process,
+          isolated: preset.isolated,
+          phpOpenBaseDir,
+          phpDisabledFuncs,
         },
       });
     });

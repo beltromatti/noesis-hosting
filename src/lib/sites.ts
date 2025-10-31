@@ -33,6 +33,34 @@ import { noteDomainInsight, noteSiteCreated, noteSiteDeleted, noteSiteStatusChan
 const execAsync = promisify(exec);
 
 const SITE_ENTRYPOINTS = ["index.php", "index.html", "index.htm"] as const;
+const JS_EXTENSIONS = [".js", ".mjs", ".cjs", ".jsx", ".ts", ".tsx"];
+const JS_BUNDLE_THRESHOLD_BYTES = 70 * 1024;
+const SPA_HINT_DIRECTORIES = ["assets", "static", "build", "dist", "js", "scripts"];
+const SPA_HINT_FILES = ["manifest.json", "service-worker.js", "sw.js", "workbox-", "vite.svg"];
+
+const RUNTIME_PRESETS: Record<SiteRuntime, { cpu: number; memory: number; storage: number; process: number; isolated: boolean }> = {
+  [SiteRuntime.STATIC]: {
+    cpu: Math.max(5, Math.floor(Number(DEFAULT_CPU_PERCENT) / 2)),
+    memory: Math.max(128, Number(DEFAULT_MEMORY_LIMIT_MB) - 64),
+    storage: env.MAX_ARCHIVE_SIZE_MB,
+    process: 0,
+    isolated: true,
+  },
+  [SiteRuntime.SPA]: {
+    cpu: Math.max(10, Math.floor((Number(DEFAULT_CPU_PERCENT) * 2) / 3)),
+    memory: Math.max(160, Number(DEFAULT_MEMORY_LIMIT_MB) - 32),
+    storage: env.MAX_ARCHIVE_SIZE_MB,
+    process: 0,
+    isolated: true,
+  },
+  [SiteRuntime.PHP]: {
+    cpu: Number(DEFAULT_CPU_PERCENT),
+    memory: Number(DEFAULT_MEMORY_LIMIT_MB),
+    storage: env.MAX_ARCHIVE_SIZE_MB,
+    process: Math.max(4, Number(DEFAULT_PROCESS_LIMIT)),
+    isolated: true,
+  },
+};
 
 type SiteWithRelations = Site & {
   domains: SiteDomain[];
@@ -116,11 +144,27 @@ function mergeSecurityConfig(partial: UpdateSecurityInput) {
   };
 }
 
-export async function analyzeDeploymentTree(root: string) {
+type DeploymentAnalysis = {
+  totalBytes: number;
+  entryPoint: string | null;
+  phpDetected: boolean;
+  totalJsBytes: number;
+  largeJsFiles: number;
+  hasServiceWorker: boolean;
+  hasManifest: boolean;
+  spaHintCount: number;
+};
+
+export async function analyzeDeploymentTree(root: string): Promise<DeploymentAnalysis> {
   const stack: string[] = [root];
   let totalBytes = 0;
   let entryPoint: string | null = null;
   let phpDetected = false;
+  let totalJsBytes = 0;
+  let largeJsFiles = 0;
+  let hasServiceWorker = false;
+  let hasManifest = false;
+  let spaHintCount = 0;
 
   while (stack.length > 0) {
     const current = stack.pop()!;
@@ -140,6 +184,10 @@ export async function analyzeDeploymentTree(root: string) {
 
       if (stats.isDirectory()) {
         stack.push(absolute);
+        const topLevel = relative.split("/")[0]?.toLowerCase();
+        if (topLevel && SPA_HINT_DIRECTORIES.includes(topLevel)) {
+          spaHintCount += 1;
+        }
         continue;
       }
 
@@ -162,6 +210,22 @@ export async function analyzeDeploymentTree(root: string) {
       if (lowerRel.endsWith(".php")) {
         phpDetected = true;
       }
+
+      if (JS_EXTENSIONS.some((ext) => lowerRel.endsWith(ext))) {
+        totalJsBytes += stats.size;
+        if (stats.size >= JS_BUNDLE_THRESHOLD_BYTES) {
+          largeJsFiles += 1;
+        }
+      }
+
+      if (!hasManifest && SPA_HINT_FILES.some((hint) => lowerRel.includes(hint))) {
+        if (lowerRel.includes("manifest")) {
+          hasManifest = true;
+        }
+        if (lowerRel.includes("service-worker") || lowerRel.includes("sw.js") || lowerRel.includes("workbox")) {
+          hasServiceWorker = true;
+        }
+      }
     }
   }
 
@@ -169,7 +233,40 @@ export async function analyzeDeploymentTree(root: string) {
     totalBytes,
     entryPoint,
     phpDetected,
+    totalJsBytes,
+    largeJsFiles,
+    hasServiceWorker,
+    hasManifest,
+    spaHintCount,
   };
+}
+
+export function determineRuntimeFromAnalysis(analysis: DeploymentAnalysis): SiteRuntime {
+  if (analysis.entryPoint === "index.php") {
+    return SiteRuntime.PHP;
+  }
+
+  const isHtml = analysis.entryPoint === "index.html" || analysis.entryPoint === "index.htm";
+  if (!isHtml) {
+    return SiteRuntime.STATIC;
+  }
+
+  const spaSignals =
+    analysis.largeJsFiles > 0 ||
+    analysis.totalJsBytes >= 300 * 1024 ||
+    analysis.hasServiceWorker ||
+    analysis.hasManifest ||
+    analysis.spaHintCount >= 2;
+
+  return spaSignals ? SiteRuntime.SPA : SiteRuntime.STATIC;
+}
+
+function runtimePreset(runtime: SiteRuntime) {
+  return RUNTIME_PRESETS[runtime] ?? RUNTIME_PRESETS[SiteRuntime.STATIC];
+}
+
+export function getRuntimePreset(runtime: SiteRuntime) {
+  return runtimePreset(runtime);
 }
 
 export async function listSitesForUser(userId: string) {
@@ -252,6 +349,8 @@ export async function createSiteForUser(userId: string, input: CreateSiteInput) 
     });
   }
 
+  const defaultPreset = runtimePreset(SiteRuntime.STATIC);
+
   let site: SiteWithRelations;
   try {
     site = await prisma.site.create({
@@ -269,10 +368,10 @@ export async function createSiteForUser(userId: string, input: CreateSiteInput) 
         securityProfile: {
           create: {
             runtime: SiteRuntime.STATIC,
-            cpuLimitPercent: DEFAULT_CPU_PERCENT,
-            memoryLimitMb: DEFAULT_MEMORY_LIMIT_MB,
-            storageLimitMb: env.MAX_ARCHIVE_SIZE_MB,
-            processLimit: DEFAULT_PROCESS_LIMIT,
+            cpuLimitPercent: defaultPreset.cpu,
+            memoryLimitMb: defaultPreset.memory,
+            storageLimitMb: defaultPreset.storage,
+            processLimit: defaultPreset.process,
             phpOpenBaseDir: storagePath,
             phpDisabledFuncs: [
               "exec",
@@ -312,7 +411,7 @@ export async function createSiteForUser(userId: string, input: CreateSiteInput) 
       siteId: site.id,
       userId,
       status: site.status,
-      runtime: SiteRuntime.STATIC,
+      runtime: site.runtime,
       domains: site.domains.map((domain) => ({
         type: domain.type,
         isPrimary: domain.isPrimary,
@@ -723,6 +822,7 @@ async function refreshPhpRuntime(site: SiteWithRelations): Promise<string | null
 
   if (!targetRuntime) {
     await fs.rm(poolFile, { force: true }).catch(() => undefined);
+    await fs.rm(socketFile, { force: true }).catch(() => undefined);
     try {
       await execAsync(`sudo systemctl reload ${PHP_FPM_SERVICE}`);
     } catch (error) {

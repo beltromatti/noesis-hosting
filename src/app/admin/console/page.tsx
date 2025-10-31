@@ -153,6 +153,7 @@ function RiskBadge({ score }: { score: number }) {
 
 const RUNTIME_BADGES: Record<string, { label: string; className: string }> = {
   PHP: { label: "PHP sandbox", className: "border-blue-400/40 bg-blue-500/15 text-blue-100" },
+  SPA: { label: "Front-end app", className: "border-purple-400/40 bg-purple-500/15 text-purple-100" },
   STATIC: { label: "Static bundle", className: "border-slate-400/40 bg-slate-500/15 text-slate-100" },
   UNKNOWN: { label: "Unknown", className: "border-slate-400/40 bg-slate-500/15 text-slate-200" },
 };
@@ -224,7 +225,7 @@ export default async function AdminDashboardPage() {
             <div className="text-3xl font-semibold text-foreground">{formatNumber(metrics.overview.activeSites)}</div>
             <p className="text-xs text-muted-foreground">
               {formatNumber(metrics.overview.totalSites)} total · {activeRatio}% active ·{" "}
-              {formatNumber(metrics.overview.pausedSites)} paused · {formatNumber(metrics.overview.phpSites)} PHP · {formatNumber(metrics.overview.staticSites)} static
+              {formatNumber(metrics.overview.pausedSites)} paused · {formatNumber(metrics.overview.runtimeMix.SPA)} SPA · {formatNumber(metrics.overview.runtimeMix.PHP)} PHP · {formatNumber(metrics.overview.runtimeMix.STATIC)} static
             </p>
           </CardContent>
         </Card>

@@ -140,8 +140,6 @@ export async function loadAdminMetrics() {
     newUsersLast7,
     deploymentsLast7,
     deploymentsLast24h,
-    phpSites,
-    staticSites,
     securityAlerts,
     securityFailures,
   ] = await prisma.$transaction([
@@ -184,8 +182,6 @@ export async function loadAdminMetrics() {
         createdAt: { gte: new Date(now - DAY_MS) },
       },
     }),
-    prisma.site.count({ where: { runtime: SiteRuntime.PHP } }),
-    prisma.site.count({ where: { runtime: SiteRuntime.STATIC } }),
     prisma.siteSecurityProfile.count({
       where: { lastScanStatus: { in: [SecurityScanStatus.WARN, SecurityScanStatus.FAIL] } },
     }),
@@ -193,6 +189,21 @@ export async function loadAdminMetrics() {
       where: { lastScanStatus: SecurityScanStatus.FAIL },
     }),
   ]);
+
+  const runtimeGroup = await prisma.site.groupBy({
+    by: ["runtime"],
+    _count: { runtime: true },
+  });
+
+  const runtimeMix: Record<SiteRuntime, number> = {
+    [SiteRuntime.STATIC]: 0,
+    [SiteRuntime.SPA]: 0,
+    [SiteRuntime.PHP]: 0,
+  };
+
+  for (const item of runtimeGroup) {
+    runtimeMix[item.runtime] = item._count.runtime;
+  }
 
   const timelineEvents = await prisma.usageEvent.findMany({
     where: {
@@ -328,8 +339,7 @@ export async function loadAdminMetrics() {
       newUsersLast7,
       deploymentsLast7,
       deploymentsLast24h,
-      phpSites,
-      staticSites,
+      runtimeMix,
       securityAlerts,
       securityFailures,
     },

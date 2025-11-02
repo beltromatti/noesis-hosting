@@ -133,7 +133,7 @@ export async function ensureUserAnalytics(userId: string, tx?: Transaction) {
   const client = getClient(tx);
   await client.userAnalytics.upsert({
     where: { userId },
-    create: { userId },
+    create: { userId, riskReasons: [] },
     update: {},
   });
 }
@@ -142,7 +142,7 @@ export async function ensureSiteAnalytics(siteId: string, tx?: Transaction) {
   const client = getClient(tx);
   await client.siteAnalytics.upsert({
     where: { siteId },
-    create: { siteId },
+    create: { siteId, riskReasons: [] },
     update: {},
   });
 }
@@ -219,6 +219,7 @@ export async function noteUserLogin(userId: string, context?: AuthContext, tx?: 
       totalLogins: 1,
       distinctIpCount: log.ipAddress ? 1 : 0,
       distinctUserAgentCount: log.userAgent ? 1 : 0,
+      riskReasons: [],
     },
     update: {
       lastLoginAt: new Date(),
@@ -254,6 +255,7 @@ export async function noteFailedLogin(email: string, context?: AuthContext) {
       failedLoginAttempts: 1,
       lastLoginIp: context?.ip ?? undefined,
       totalLoginFailures: 1,
+      riskReasons: [],
     },
     update: {
       failedLoginAttempts: { increment: 1 },
@@ -289,6 +291,7 @@ export async function noteSiteCreated(
       dnsVerified,
       lastStatus: params.status,
       runtime: params.runtime,
+      riskReasons: [],
     },
     update: {
       dnsVerified,
@@ -304,6 +307,7 @@ export async function noteSiteCreated(
       totalSites: 1,
       activeSites: params.status === SiteStatus.ACTIVE ? 1 : 0,
       pausedSites: params.status === SiteStatus.DISABLED ? 1 : 0,
+      riskReasons: [],
     },
     update: {
       totalSites: { increment: 1 },
@@ -334,6 +338,7 @@ export async function noteSiteStatusChange(
       siteId: params.siteId,
       lastStatus: params.nextStatus,
       pausedAt: params.nextStatus === SiteStatus.DISABLED ? new Date() : undefined,
+      riskReasons: [],
     },
     update: {
       lastStatus: params.nextStatus,
@@ -348,6 +353,7 @@ export async function noteSiteStatusChange(
       totalSites: 1,
       activeSites: params.nextStatus === SiteStatus.ACTIVE ? 1 : 0,
       pausedSites: params.nextStatus === SiteStatus.DISABLED ? 1 : 0,
+      riskReasons: [],
     },
     update: {
       ...(previousStatus === SiteStatus.ACTIVE ? { activeSites: { decrement: 1 } } : {}),
@@ -374,6 +380,7 @@ export async function noteSiteDeleted(
     where: { userId: params.userId },
     create: {
       userId: params.userId,
+      riskReasons: [],
     },
     update: {
       totalSites: { decrement: 1 },
@@ -414,6 +421,7 @@ export async function noteDeploymentResult(
       lastMalwareScanPassed: params.malwareScanPassed,
       lastStatus: params.success ? SiteStatus.ACTIVE : null,
       runtime: params.runtime,
+      riskReasons: [],
     },
     update: {
       totalDeployments: { increment: 1 },
@@ -440,6 +448,7 @@ export async function noteDeploymentResult(
     create: {
       userId: params.userId,
       totalDeployments: params.success ? 1 : 0,
+      riskReasons: [],
     },
     update: params.success
       ? {
@@ -467,6 +476,7 @@ export async function noteDomainInsight(
       siteId: params.siteId,
       dnsVerified: params.dnsVerified,
       proxiedThroughCloudflare: params.proxied,
+      riskReasons: [],
     },
     update: {
       dnsVerified: params.dnsVerified,

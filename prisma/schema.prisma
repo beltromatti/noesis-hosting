@@ -180,7 +180,7 @@ model UserAnalytics {
   failedLoginAttempts Int      @default(0)
   abuseReports        Int      @default(0)
   riskScore           Int      @default(0)
-  riskReasons         String[]
+  riskReasons         String[]   @default([])
   totalLogins         Int      @default(0)
   totalLoginFailures  Int      @default(0)
   distinctIpCount     Int      @default(0)
@@ -213,7 +213,7 @@ model SiteAnalytics {
   lastStatus               SiteStatus?
   runtime                  SiteRuntime?
   riskScore                Int        @default(0)
-  riskReasons              String[]
+  riskReasons              String[]   @default([])
   createdAt                DateTime   @default(now())
   updatedAt                DateTime   @updatedAt
 

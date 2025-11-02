@@ -2,25 +2,22 @@
 
 # Noesis Hosting
 
-**Zero-cost static hosting for the Noesis AI community.**  
-Upload zipped builds, wire up domains, and manage security-safe deployments from a dark, minimal dashboard.
+**A philanthropic, production-grade edge for AI literacy and civic innovation.**  
+The Noesis AI Foundation operates this stack so that educators, researchers, NGOs, and curious makers can publish modern web experiences without touching invoices or compromising on reliability.
 
 </div>
 
 ---
 
-## ✨ Features
+## ✨ What the platform delivers
 
-- **Guided onboarding** – marketing site, onboarding copy, and legal pages tailored to the Noesis AI manifesto.
-- **Account system** – email/password signup, login and session cookies stored in PostgreSQL.
-- **Site management** – create sites, upload zipped static bundles, trigger redeploys, and track deployment history.
-- **Security automation** – ClamAV scanning, nginx config generation, HTTPS enforcement toggles, firewall presets.
-- **Domain handling** – free subdomains under `hosting.noesisai.org`, custom domain assignment, and purchase-request workflow scaffolding.
-- **Automatic DNS provisioning** – sandbox subdomains are minted via the Cloudflare API and proxied to the Noesis edge automatically.
-- **Infrastructure hooks** – nginx snippets dropped into `/etc/nginx/hosted-sites`, PM2 process for production runtime.
-- **DNS monitoring** – scheduled checks verify that primary domains resolve to the configured edge IP (or Cloudflare orange-cloud proxies) with status surfaced in the dashboard.
+- **Foundation-backed reliability** – antivirus scans (ClamAV), isolated php-fpm pools, enforced HTTPS, and hardened nginx blueprints ship with every deployment.
+- **Zero-cost hosting** – unlimited sites under `*.hosting.noesisai.org`, optional custom domains, and no premium tiers. Operations are sustained by donations and domain purchases.
+- **Minimal, expressive control centre** – bespoke landing page, guided onboarding, account management, usage analytics (including geo/device insights), and transparent audit trails.
+- **Automated infrastructure choreography** – zipped bundle uploads, redeploys, rollbacks, DNS provisioning, nginx snippet management, and PM2 supervision baked in.
+- **Research-friendly telemetry** – login/device geostatistics, risk scoring for users/sites, deployment history, DNS status, and security posture surfaced through the admin console.
 
-## 🛠️ Stack
+## 🛠️ Tech stack
 
 - [Next.js 16 (App Router)](https://nextjs.org/) + React 19
 - Tailwind CSS v4 (atomic CSS via `@tailwindcss/postcss`)
@@ -126,6 +123,12 @@ Ensure Cloudflare (or your DNS provider) points:
 3. Create migrations if touching the data layer.
 4. Open PR with a clear description and testing notes.
 
-## 📄 License
+## 💚 Funding & ethos
 
-This project is part of the **Noesis AI** open-source initiative. Usage is governed by the Noesis AI License Agreement – ensure ethical compliance before deploying derivatives.
+Noesis Hosting is operated by the **Noesis AI Foundation** as part of its mission to democratise AI literacy and civic tooling. Compute, bandwidth, and security reviews are covered by:
+
+- Philanthropic donations and research grants.
+- Optional domain purchases routed through the foundation registrar.
+- Voluntary contributions from organisations scaling beyond the default quotas.
+
+The platform is open-source under the Noesis AI License Agreement; every contribution should respect the foundation's ethical guidelines and the communities we serve.

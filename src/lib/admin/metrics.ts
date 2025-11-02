@@ -1,4 +1,5 @@
 import {
+  AuthEventType,
   Prisma,
   SecurityScanStatus,
   SiteRuntime,
@@ -124,6 +125,12 @@ export async function loadAdminMetrics() {
   const now = Date.now();
   const sevenDaysAgo = new Date(now - 7 * DAY_MS);
   const fourteenDaysAgo = new Date(now - 13 * DAY_MS);
+  const thirtyDaysAgo = new Date(now - 30 * DAY_MS);
+
+  const loginSuccessFilter = {
+    eventType: AuthEventType.LOGIN_SUCCESS,
+    occurredAt: { gte: thirtyDaysAgo },
+  } as const;
 
   const [
     totalUsers,
@@ -142,6 +149,14 @@ export async function loadAdminMetrics() {
     deploymentsLast24h,
     securityAlerts,
     securityFailures,
+    loginsLast30,
+    loginsLast7,
+    loginsLast24,
+    topCountryGroups,
+    topCityGroups,
+    browserGroups,
+    osGroups,
+    deviceGroups,
   ] = await prisma.$transaction([
     prisma.user.count(),
     prisma.site.count(),
@@ -187,6 +202,65 @@ export async function loadAdminMetrics() {
     }),
     prisma.siteSecurityProfile.count({
       where: { lastScanStatus: SecurityScanStatus.FAIL },
+    }),
+    prisma.userAccessLog.count({
+      where: loginSuccessFilter,
+    }),
+    prisma.userAccessLog.count({
+      where: {
+        eventType: AuthEventType.LOGIN_SUCCESS,
+        occurredAt: { gte: sevenDaysAgo },
+      },
+    }),
+    prisma.userAccessLog.count({
+      where: {
+        eventType: AuthEventType.LOGIN_SUCCESS,
+        occurredAt: { gte: new Date(now - DAY_MS) },
+      },
+    }),
+    prisma.userAccessLog.groupBy({
+      by: ["geoCountry"],
+      where: loginSuccessFilter,
+      _count: { _all: true },
+      orderBy: {
+        geoCountry: "asc",
+      },
+    }),
+    prisma.userAccessLog.groupBy({
+      by: ["geoCountry", "geoCity"],
+      where: loginSuccessFilter,
+      _count: { _all: true },
+      orderBy: [
+        { geoCountry: "asc" },
+        { geoCity: "asc" },
+      ],
+    }),
+    prisma.userAccessLog.groupBy({
+      by: ["clientBrowser"],
+      where: loginSuccessFilter,
+      _count: { _all: true },
+      orderBy: {
+        clientBrowser: "asc",
+      },
+    }),
+    prisma.userAccessLog.groupBy({
+      by: ["clientOs"],
+      where: loginSuccessFilter,
+      _count: { _all: true },
+      orderBy: {
+        clientOs: "asc",
+      },
+    }),
+    prisma.userAccessLog.groupBy({
+      by: ["isMobile"],
+      where: {
+        ...loginSuccessFilter,
+        isBot: false,
+      },
+      _count: { _all: true },
+      orderBy: {
+        isMobile: "asc",
+      },
     }),
   ]);
 
@@ -323,6 +397,110 @@ export async function loadAdminMetrics() {
     },
   });
 
+  const [uniqueUserEntries, uniqueIpEntries, botLogins] = await Promise.all([
+    prisma.userAccessLog.findMany({
+      where: loginSuccessFilter,
+      distinct: ["userId"],
+      select: { userId: true },
+    }),
+    prisma.userAccessLog.findMany({
+      where: loginSuccessFilter,
+      distinct: ["ipAddress"],
+      select: { ipAddress: true },
+    }),
+    prisma.userAccessLog.count({
+      where: {
+        ...loginSuccessFilter,
+        isBot: true,
+      },
+    }),
+  ]);
+
+  const uniqueUsers30 = uniqueUserEntries.filter((entry) => entry.userId !== null).length;
+  const uniqueIps30 = uniqueIpEntries.filter((entry) => entry.ipAddress !== null).length;
+
+  const resolveGroupCount = (entry: { _count: unknown }) => {
+    if (!entry || typeof entry._count !== "object" || entry._count === null) {
+      return 0;
+    }
+    const candidate = entry._count as { _all?: number };
+    return typeof candidate._all === "number" ? candidate._all : 0;
+  };
+
+  const sortedCountryGroups = [...topCountryGroups]
+    .sort((a, b) => resolveGroupCount(b) - resolveGroupCount(a))
+    .slice(0, 6);
+  const sortedCityGroups = [...topCityGroups]
+    .sort((a, b) => resolveGroupCount(b) - resolveGroupCount(a))
+    .slice(0, 6);
+  const sortedBrowserGroups = [...browserGroups]
+    .sort((a, b) => resolveGroupCount(b) - resolveGroupCount(a))
+    .slice(0, 6);
+  const sortedOsGroups = [...osGroups]
+    .sort((a, b) => resolveGroupCount(b) - resolveGroupCount(a))
+    .slice(0, 6);
+
+  const topCountries = sortedCountryGroups.map((group) => {
+    const label = group.geoCountry ?? "Unknown";
+    const count = resolveGroupCount(group);
+    const percent = loginsLast30 > 0 ? Math.round((count / loginsLast30) * 1000) / 10 : 0;
+    return {
+      country: label,
+      count,
+      percent,
+    };
+  });
+
+  const topCities = sortedCityGroups.map((group) => {
+    const country = group.geoCountry ?? "Unknown";
+    const city = group.geoCity ?? "Unspecified";
+    const label = city === "Unspecified" ? country : `${city}, ${country}`;
+    const count = resolveGroupCount(group);
+    const percent = loginsLast30 > 0 ? Math.round((count / loginsLast30) * 1000) / 10 : 0;
+    return {
+      label,
+      count,
+      percent,
+    };
+  });
+
+  const browserShare = sortedBrowserGroups.map((group) => {
+    const label = group.clientBrowser ?? "Unclassified";
+    const count = resolveGroupCount(group);
+    const percent = loginsLast30 > 0 ? Math.round((count / loginsLast30) * 1000) / 10 : 0;
+    return {
+      label,
+      count,
+      percent,
+    };
+  });
+
+  const osShare = sortedOsGroups.map((group) => {
+    const label = group.clientOs ?? "Unknown";
+    const count = resolveGroupCount(group);
+    const percent = loginsLast30 > 0 ? Math.round((count / loginsLast30) * 1000) / 10 : 0;
+    return {
+      label,
+      count,
+      percent,
+    };
+  });
+
+  let mobileLogins = 0;
+  let desktopLogins = 0;
+  let unknownLogins = 0;
+  for (const group of deviceGroups) {
+    const count = resolveGroupCount(group);
+    if (group.isMobile === true) {
+      mobileLogins += count;
+    } else if (group.isMobile === false) {
+      desktopLogins += count;
+    } else {
+      unknownLogins += count;
+    }
+  }
+  const humanLogins = mobileLogins + desktopLogins + unknownLogins;
+
   return {
     overview: {
       totalUsers,
@@ -375,5 +553,25 @@ export async function loadAdminMetrics() {
       riskScore: user.analytics?.riskScore ?? 0,
       riskReasons: user.analytics?.riskReasons ?? [],
     })),
+    accessInsights: {
+      windowDays: 30,
+      totalLogins: loginsLast30,
+      logins7d: loginsLast7,
+      logins24h: loginsLast24,
+      uniqueUsers: uniqueUsers30,
+      uniqueIps: uniqueIps30,
+      botCount: botLogins,
+      topCountries,
+      topCities,
+      browserShare,
+      osShare,
+      deviceSplit: {
+        mobile: mobileLogins,
+        desktop: desktopLogins,
+        unknown: unknownLogins,
+        bots: botLogins,
+        humanTotal: humanLogins,
+      },
+    },
   };
 }

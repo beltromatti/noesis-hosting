@@ -1,6 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Activity, AlertTriangle, ArrowUpRight, Database, ShieldAlert, ShieldCheck, Users } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  ArrowUpRight,
+  Database,
+  Globe2,
+  MonitorSmartphone,
+  PieChart,
+  ShieldAlert,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 import { getSession } from "@/lib/session";
 import { loadAdminMetrics } from "@/lib/admin/metrics";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -137,6 +148,88 @@ function Sparkline({ data }: { data: TimelinePoint[] }) {
   );
 }
 
+type RankedItem = {
+  label: string;
+  count: number;
+  percent: number;
+};
+
+function RankedList({
+  items,
+  gradient,
+  emptyLabel,
+}: {
+  items: RankedItem[];
+  gradient: string;
+  emptyLabel: string;
+}) {
+  if (!items.length) {
+    return <p className="text-xs text-muted-foreground">{emptyLabel}</p>;
+  }
+
+  const meaningfulItems = items.filter((item) => item.count > 0);
+  if (meaningfulItems.length === 0) {
+    return <p className="text-xs text-muted-foreground">{emptyLabel}</p>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {meaningfulItems.map((item) => {
+        const clampedPercent = Math.min(Math.max(item.percent, 0), 100);
+        const width = clampedPercent > 0 ? Math.max(clampedPercent, 6) : 0;
+        return (
+          <div key={`${item.label}-${item.count}`} className="space-y-1">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span className="text-foreground">{item.label}</span>
+              <span className="tabular-nums">
+                {formatNumber(item.count)} · {clampedPercent.toFixed(1)}%
+              </span>
+            </div>
+            <div className="relative h-2 overflow-hidden rounded-full bg-muted/15">
+              <div
+                className={cn("absolute inset-y-0 left-0 rounded-full bg-gradient-to-r", gradient)}
+                style={{ width: `${width}%` }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function DeviceMeter({
+  label,
+  value,
+  total,
+  gradient,
+}: {
+  label: string;
+  value: number;
+  total: number;
+  gradient: string;
+}) {
+  const percent = total > 0 ? (value / total) * 100 : 0;
+  const clamped = Math.min(Math.max(percent, 0), 100);
+  const width = percent > 0 ? Math.max(clamped, 6) : 0;
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span className="text-foreground">{label}</span>
+        <span className="tabular-nums">
+          {formatNumber(value)} · {clamped.toFixed(1)}%
+        </span>
+      </div>
+      <div className="relative h-2 overflow-hidden rounded-full bg-muted/15">
+        <div
+          className={cn("absolute inset-y-0 left-0 rounded-full bg-gradient-to-r", gradient)}
+          style={{ width: `${width}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 function RiskBadge({ score }: { score: number }) {
   const tone =
     score >= 75
@@ -182,6 +275,33 @@ export default async function AdminDashboardPage() {
   const failureRate =
     metrics.timeline.reduce((sum, point) => sum + point.failures, 0) /
     Math.max(metrics.timeline.reduce((sum, point) => sum + point.deployments, 0), 1);
+  const access = metrics.accessInsights;
+  const topCountries = access.topCountries.slice(0, 5);
+  const topCities = access.topCities.slice(0, 5);
+  const browserShare = access.browserShare.slice(0, 5);
+  const osShare = access.osShare.slice(0, 5);
+  const countryItems = topCountries.map(({ country, count, percent }) => ({
+    label: country,
+    count,
+    percent,
+  }));
+  const cityItems = topCities.map(({ label, count, percent }) => ({
+    label,
+    count,
+    percent,
+  }));
+  const browserItems = browserShare.map(({ label, count, percent }) => ({
+    label,
+    count,
+    percent,
+  }));
+  const osItems = osShare.map(({ label, count, percent }) => ({
+    label,
+    count,
+    percent,
+  }));
+  const humanDeviceTotal = access.deviceSplit.humanTotal;
+  const botShare = access.totalLogins > 0 ? (access.botCount / access.totalLogins) * 100 : 0;
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl space-y-12 px-6 pb-20 pt-16">
@@ -302,10 +422,178 @@ export default async function AdminDashboardPage() {
             Failure rate {(failureRate * 100).toFixed(1)}%
           </Badge>
         </CardHeader>
-        <CardContent>
-          <Sparkline data={metrics.timeline} />
-        </CardContent>
-      </Card>
+      <CardContent>
+        <Sparkline data={metrics.timeline} />
+      </CardContent>
+    </Card>
+
+      <section className="grid gap-8 xl:grid-cols-3">
+        <Card className="border-border/40 bg-card/80 shadow-sm shadow-black/20">
+          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
+                Access telemetry
+                <PieChart className="h-4 w-4 text-emerald-300" />
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Successful platform logins observed over the last {access.windowDays}-day window.
+              </CardDescription>
+            </div>
+            <Badge variant="outline" className="border-emerald-400/40 bg-emerald-500/10 text-emerald-100">
+              {formatNumber(access.logins24h)} / 24h
+            </Badge>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="space-y-1 rounded-lg border border-border/20 bg-card/70 p-3">
+                <p className="text-[0.65rem] uppercase tracking-[0.25em] text-muted-foreground">Total logins</p>
+                <p className="text-2xl font-semibold text-foreground">{formatNumber(access.totalLogins)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {formatNumber(access.logins7d)} in the last 7 days
+                </p>
+              </div>
+              <div className="space-y-1 rounded-lg border border-border/20 bg-card/70 p-3">
+                <p className="text-[0.65rem] uppercase tracking-[0.25em] text-muted-foreground">Unique accounts</p>
+                <p className="text-2xl font-semibold text-foreground">{formatNumber(access.uniqueUsers)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {formatNumber(access.uniqueIps)} unique IPs observed
+                </p>
+              </div>
+              <div className="space-y-1 rounded-lg border border-border/20 bg-card/70 p-3">
+                <p className="text-[0.65rem] uppercase tracking-[0.25em] text-muted-foreground">24h throughput</p>
+                <p className="text-2xl font-semibold text-foreground">{formatNumber(access.logins24h)}</p>
+                <p className="text-xs text-muted-foreground">{access.windowDays}-day observation window</p>
+              </div>
+            </div>
+            {access.botCount > 0 ? (
+              <div className="rounded-lg border border-amber-400/20 bg-amber-500/10 px-3 py-2 text-[0.7rem] text-amber-100">
+                {formatNumber(access.botCount)} sessions flagged as automated (~{botShare.toFixed(1)}%). Review WAF and
+                rate-limiting if the trend accelerates.
+              </div>
+            ) : (
+              <p className="text-[0.7rem] text-muted-foreground">
+                No automated login traffic detected within this window.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/40 bg-card/80 shadow-sm shadow-black/20">
+          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
+                Geographic footprint
+                <Globe2 className="h-4 w-4 text-sky-300" />
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Primary origins for authenticated traffic across the edge.
+              </CardDescription>
+            </div>
+            <Badge variant="outline" className="border-sky-400/40 bg-sky-500/10 text-sky-100">
+              {formatNumber(access.totalLogins)} events
+            </Badge>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <h4 className="text-[0.65rem] uppercase tracking-[0.25em] text-muted-foreground">Top countries</h4>
+              <div className="mt-3">
+                <RankedList
+                  items={countryItems}
+                  gradient="from-emerald-400/80 via-emerald-400/60 to-emerald-500/60"
+                  emptyLabel="No geographic signals recorded yet."
+                />
+              </div>
+            </div>
+            <div>
+              <h4 className="text-[0.65rem] uppercase tracking-[0.25em] text-muted-foreground">Top metro areas</h4>
+              <div className="mt-3">
+                <RankedList
+                  items={cityItems}
+                  gradient="from-sky-400/80 via-sky-400/60 to-blue-500/60"
+                  emptyLabel="City-level analytics will appear once sufficient traffic arrives."
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/40 bg-card/80 shadow-sm shadow-black/20">
+          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-lg font-semibold text-foreground">
+                Client mix
+                <MonitorSmartphone className="h-4 w-4 text-purple-300" />
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground">
+                Device posture, browsers, and operating systems seen in the window.
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <h4 className="text-[0.65rem] uppercase tracking-[0.25em] text-muted-foreground">Human devices</h4>
+              {humanDeviceTotal > 0 ? (
+                <div className="mt-3 space-y-3">
+                  <DeviceMeter
+                    label="Desktop"
+                    value={access.deviceSplit.desktop}
+                    total={humanDeviceTotal}
+                    gradient="from-sky-400/80 via-sky-400/60 to-blue-500/60"
+                  />
+                  <DeviceMeter
+                    label="Mobile / tablet"
+                    value={access.deviceSplit.mobile}
+                    total={humanDeviceTotal}
+                    gradient="from-violet-400/80 via-violet-400/60 to-indigo-500/60"
+                  />
+                  <DeviceMeter
+                    label="Unknown agents"
+                    value={access.deviceSplit.unknown}
+                    total={humanDeviceTotal}
+                    gradient="from-slate-400/70 via-slate-400/50 to-slate-500/50"
+                  />
+                </div>
+              ) : (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  No verified human sessions recorded in the current observation window.
+                </p>
+              )}
+            </div>
+            <Separator className="border-border/30" />
+            <div>
+              <h4 className="text-[0.65rem] uppercase tracking-[0.25em] text-muted-foreground">Browser share</h4>
+              <div className="mt-3">
+                <RankedList
+                  items={browserItems}
+                  gradient="from-blue-400/80 via-blue-400/60 to-indigo-500/60"
+                  emptyLabel="Browser telemetry is not yet available."
+                />
+              </div>
+            </div>
+            <Separator className="border-border/30" />
+            <div>
+              <h4 className="text-[0.65rem] uppercase tracking-[0.25em] text-muted-foreground">OS footprint</h4>
+              <div className="mt-3">
+                <RankedList
+                  items={osItems}
+                  gradient="from-purple-400/80 via-purple-400/60 to-fuchsia-500/60"
+                  emptyLabel="OS level telemetry is not yet available."
+                />
+              </div>
+            </div>
+            <Separator className="border-border/30" />
+            <div className="text-xs text-muted-foreground">
+              {access.botCount > 0 ? (
+                <span>
+                  {formatNumber(access.botCount)} sessions ({botShare.toFixed(1)}%) matched automation signatures.
+                </span>
+              ) : (
+                <span>No automated clients detected in this period.</span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
       <section className="grid gap-8 lg:grid-cols-2">
         <Card className="border-border/40 bg-card/80 shadow-sm shadow-black/20">

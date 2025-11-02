@@ -41,8 +41,11 @@ function toSafeUser(user: { id: string; email: string; fullName: string | null; 
   } satisfies SafeUser;
 }
 
+type AuthEventContext = Parameters<typeof noteUserLogin>[1];
+
 export async function registerUser(
-  data: z.infer<typeof registrationSchema>
+  data: z.infer<typeof registrationSchema>,
+  context?: AuthEventContext
 ): Promise<{ user: SafeUser; session: SessionRecord }> {
   const parsed = registrationSchema.refine((values) => values.password === values.confirmPassword, {
     message: "Passwords must match",
@@ -64,15 +67,16 @@ export async function registerUser(
     },
   });
 
-  void noteUserRegistration(user.id);
-  void noteUserLogin(user.id);
+  const session = await createSession(user.id);
+
+  void noteUserRegistration(user.id, context);
+  void noteUserLogin(user.id, { ...context, sessionId: session.id });
   void recordUsageEvent({
     eventType: UsageEventType.USER_REGISTERED,
     userId: user.id,
     metadata: { email: user.email },
   });
 
-  const session = await createSession(user.id);
   return { user: toSafeUser(user), session };
 }
 

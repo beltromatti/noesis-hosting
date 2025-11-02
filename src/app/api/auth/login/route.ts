@@ -4,10 +4,10 @@ import { authenticateUser } from "@/lib/auth";
 import { attachSessionCookie } from "@/lib/session";
 import { recordUsageEvent } from "@/lib/usage";
 import { noteFailedLogin, noteUserLogin } from "@/lib/analytics";
+import { getRequestFingerprint } from "@/lib/request-metadata";
 
 export async function POST(request: Request) {
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  const ipCandidate = forwardedFor?.split(",")[0]?.trim() ?? request.headers.get("x-real-ip") ?? null;
+  const fingerprint = getRequestFingerprint(request);
   const payload = await request.json().catch(() => null);
   try {
     if (!payload) {
@@ -16,13 +16,28 @@ export async function POST(request: Request) {
     const { user, session } = await authenticateUser(payload);
     const response = NextResponse.json({ user }, { status: 200 });
     attachSessionCookie(response, session);
-    void noteUserLogin(user.id, ipCandidate);
+    void noteUserLogin(user.id, {
+      ip: fingerprint.ip,
+      userAgent: fingerprint.userAgent,
+      sessionId: session.id,
+      metadata: {
+        referer: fingerprint.referer ?? undefined,
+        acceptLanguage: fingerprint.acceptLanguage ?? undefined,
+      },
+    });
     return response;
   } catch (error) {
     console.error("Login failed", error);
     const email = typeof payload?.email === "string" ? payload.email.toLowerCase() : undefined;
     if (email) {
-      void noteFailedLogin(email, ipCandidate);
+      void noteFailedLogin(email, {
+        ip: fingerprint.ip,
+        userAgent: fingerprint.userAgent,
+        metadata: {
+          referer: fingerprint.referer ?? undefined,
+          acceptLanguage: fingerprint.acceptLanguage ?? undefined,
+        },
+      });
     }
     void recordUsageEvent({
       eventType: UsageEventType.USER_LOGIN_FAILED,

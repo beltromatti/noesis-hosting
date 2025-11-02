@@ -7,6 +7,7 @@ export const SESSION_COOKIE = "noesis_session";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
 
 export type SessionRecord = {
+  id: string;
   token: string;
   expiresAt: Date;
 };
@@ -15,15 +16,20 @@ export async function createSession(userId: string): Promise<SessionRecord> {
   const token = randomUUID();
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
 
-  await prisma.session.create({
+  const session = await prisma.session.create({
     data: {
       userId,
       token,
       expiresAt,
     },
+    select: {
+      id: true,
+      token: true,
+      expiresAt: true,
+    },
   });
 
-  return { token, expiresAt };
+  return session;
 }
 
 export function attachSessionCookie(response: NextResponse, session: SessionRecord) {

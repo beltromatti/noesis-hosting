@@ -59,11 +59,14 @@ PLATFORM_ZONE_NAME="noesisai.org"
 CLOUDFLARE_EMAIL="your-cloudflare-email@example.com"
 CLOUDFLARE_API_KEY="your-global-api-key"
 MAX_ARCHIVE_SIZE_MB="150"
+IPINFO_TOKEN="optional-api-token-for-ipinfo"
 ```
 
 Ensure the upload directories exist and are writable by the runtime user.
 
 `PLATFORM_EDGE_IP` is the public IPv4 address your domains should resolve to; the dashboard uses it to flag DNS propagation. `PLATFORM_ZONE_NAME`, `CLOUDFLARE_EMAIL`, and `CLOUDFLARE_API_KEY` allow the platform to mint sandbox DNS records (proxied through Cloudflare) automatically.
+
+`IPINFO_TOKEN` is optional but recommended. When provided, every auth event (signup, login, failed login) is enriched with geolocation, ASN, carrier, and privacy metadata via the ipinfo API and logged for security analytics.
 
 ## 🧑‍💻 Local development
 

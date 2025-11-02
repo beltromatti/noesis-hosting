@@ -1,5 +1,6 @@
-import { DomainStatus, DomainType, Prisma, SiteRuntime, SiteStatus } from "@prisma/client";
+import { AuthEventType, DomainStatus, DomainType, Prisma, SiteRuntime, SiteStatus } from "@prisma/client";
 import { prisma } from "./prisma";
+import { recordUserAccessEvent } from "./user-access";
 
 type Transaction = Prisma.TransactionClient;
 type Client = Transaction | typeof prisma;
@@ -7,6 +8,13 @@ type Client = Transaction | typeof prisma;
 function getClient(tx?: Transaction): Client {
   return tx ?? prisma;
 }
+
+type AuthContext = {
+  ip?: string | null;
+  userAgent?: string | null;
+  sessionId?: string | null;
+  metadata?: Record<string, unknown>;
+};
 
 function deriveSiteRisk(params: {
   failedDeployments: number;
@@ -139,30 +147,103 @@ export async function ensureSiteAnalytics(siteId: string, tx?: Transaction) {
   });
 }
 
-export async function noteUserRegistration(userId: string, tx?: Transaction) {
+export async function noteUserRegistration(userId: string, context?: AuthContext, tx?: Transaction) {
   await ensureUserAnalytics(userId, tx);
+  await recordUserAccessEvent({
+    userId,
+    eventType: AuthEventType.SIGNUP,
+    ipAddress: context?.ip,
+    userAgent: context?.userAgent,
+    metadata: context?.metadata,
+  });
 }
 
-export async function noteUserLogin(userId: string, ip?: string | null, tx?: Transaction) {
+async function updateAccessStats(userId: string, client: Client) {
+  const [distinctIpCount, distinctUserAgentCount, totalLogins, totalLoginFailures] = await Promise.all([
+    prisma.userAccessLog
+      .findMany({
+        where: { userId, ipAddress: { not: null } },
+        distinct: ["ipAddress"],
+        select: { ipAddress: true },
+      })
+      .then((rows) => rows.length),
+    prisma.userAccessLog
+      .findMany({
+        where: { userId, userAgent: { not: null } },
+        distinct: ["userAgent"],
+        select: { userAgent: true },
+      })
+      .then((rows) => rows.length),
+    prisma.userAccessLog.count({
+      where: { userId, eventType: AuthEventType.LOGIN_SUCCESS },
+    }),
+    prisma.userAccessLog.count({
+      where: { userId, eventType: AuthEventType.LOGIN_FAILURE },
+    }),
+  ]);
+
+  await client.userAnalytics.update({
+    where: { userId },
+    data: {
+      distinctIpCount,
+      distinctUserAgentCount,
+      totalLogins,
+      totalLoginFailures,
+    },
+  });
+}
+
+export async function noteUserLogin(userId: string, context?: AuthContext, tx?: Transaction) {
   const client = getClient(tx);
+  await ensureUserAnalytics(userId, tx);
+
+  const { log } = await recordUserAccessEvent({
+    userId,
+    eventType: AuthEventType.LOGIN_SUCCESS,
+    ipAddress: context?.ip,
+    userAgent: context?.userAgent,
+    sessionId: context?.sessionId ?? undefined,
+    metadata: context?.metadata,
+  });
+
   await client.userAnalytics.upsert({
     where: { userId },
     create: {
       userId,
       lastLoginAt: new Date(),
-      lastLoginIp: ip ?? undefined,
+      lastLoginIp: log.ipAddress ?? context?.ip ?? undefined,
+      failedLoginAttempts: 0,
+      lastLoginUserAgent: log.userAgent ?? context?.userAgent ?? undefined,
+      lastLoginCity: log.geoCity ?? undefined,
+      lastLoginCountry: log.geoCountry ?? undefined,
+      totalLogins: 1,
+      distinctIpCount: log.ipAddress ? 1 : 0,
+      distinctUserAgentCount: log.userAgent ? 1 : 0,
     },
     update: {
       lastLoginAt: new Date(),
-      lastLoginIp: ip ?? undefined,
+      lastLoginIp: log.ipAddress ?? context?.ip ?? undefined,
       failedLoginAttempts: 0,
+      lastLoginUserAgent: log.userAgent ?? context?.userAgent ?? undefined,
+      lastLoginCity: log.geoCity ?? undefined,
+      lastLoginCountry: log.geoCountry ?? undefined,
+      totalLogins: { increment: 1 },
     },
   });
 
+  await updateAccessStats(userId, client);
   await refreshUserRisk(userId, client);
 }
 
-export async function noteFailedLogin(email: string, ip?: string | null) {
+export async function noteFailedLogin(email: string, context?: AuthContext) {
+  await recordUserAccessEvent({
+    email,
+    eventType: AuthEventType.LOGIN_FAILURE,
+    ipAddress: context?.ip,
+    userAgent: context?.userAgent,
+    metadata: context?.metadata,
+  });
+
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) return;
 
@@ -171,14 +252,17 @@ export async function noteFailedLogin(email: string, ip?: string | null) {
     create: {
       userId: user.id,
       failedLoginAttempts: 1,
-      lastLoginIp: ip ?? undefined,
+      lastLoginIp: context?.ip ?? undefined,
+      totalLoginFailures: 1,
     },
     update: {
       failedLoginAttempts: { increment: 1 },
-      lastLoginIp: ip ?? undefined,
+      lastLoginIp: context?.ip ?? undefined,
+      totalLoginFailures: { increment: 1 },
     },
   });
 
+  await updateAccessStats(user.id, prisma);
   await refreshUserRisk(user.id, prisma);
 }
 

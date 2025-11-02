@@ -76,6 +76,13 @@ enum UsageEventType {
   DOMAIN_VERIFICATION_FAILED
 }
 
+enum AuthEventType {
+  SIGNUP
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  SESSION_CREATED
+}
+
 model User {
   id           String     @id @default(cuid())
   email        String     @unique
@@ -88,6 +95,7 @@ model User {
   sessions     Session[]
   usageEvents  UsageEvent[]
   analytics    UserAnalytics?
+  accessLogs   UserAccessLog[]
 }
 
 model Session {
@@ -97,6 +105,7 @@ model Session {
   token     String   @unique
   createdAt DateTime @default(now())
   expiresAt DateTime
+  accessLogs UserAccessLog[]
 }
 
 model Site {
@@ -172,6 +181,13 @@ model UserAnalytics {
   abuseReports        Int      @default(0)
   riskScore           Int      @default(0)
   riskReasons         String[]
+  totalLogins         Int      @default(0)
+  totalLoginFailures  Int      @default(0)
+  distinctIpCount     Int      @default(0)
+  distinctUserAgentCount Int   @default(0)
+  lastLoginUserAgent  String?
+  lastLoginCity       String?
+  lastLoginCountry    String?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
@@ -237,4 +253,70 @@ model UsageEvent {
   @@index([eventType, createdAt])
   @@index([userId, createdAt])
   @@index([siteId, createdAt])
+}
+
+model IpAddressInsight {
+  ipAddress   String           @id
+  city        String?
+  region      String?
+  country     String?
+  latitude    Float?
+  longitude   Float?
+  timezone    String?
+  postal      String?
+  org         String?
+  asn         String?
+  asnName     String?
+  asnDomain   String?
+  asnType     String?
+  carrierName String?
+  carrierMcc  String?
+  carrierMnc  String?
+  host        String?
+  threatLevel String?
+  proxyType   String?
+  isBogon     Boolean          @default(false)
+  raw         Json?
+  fetchedAt   DateTime         @default(now())
+  expiresAt   DateTime?
+  accessLogs  UserAccessLog[]
+}
+
+model UserAccessLog {
+  id                    String            @id @default(cuid())
+  user                  User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId                String?
+  session               Session?          @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  sessionId             String?
+  email                 String?
+  eventType             AuthEventType
+  occurredAt            DateTime          @default(now())
+  ipAddress             String?
+  ipInsight             IpAddressInsight? @relation(fields: [ipAddress], references: [ipAddress], onDelete: SetNull)
+  userAgent             String?
+  clientBrowser         String?
+  clientBrowserVersion  String?
+  clientOs              String?
+  clientOsVersion       String?
+  clientDevice          String?
+  clientPlatform        String?
+  clientEngine          String?
+  isMobile              Boolean?
+  isBot                 Boolean?
+  geoCity               String?
+  geoRegion             String?
+  geoCountry            String?
+  geoTimezone           String?
+  geoLoc                String?
+  isp                   String?
+  org                   String?
+  confidence            Float?
+  metadata              Json?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@index([userId, occurredAt])
+  @@index([email, occurredAt])
+  @@index([ipAddress, occurredAt])
+  @@index([eventType, occurredAt])
 }

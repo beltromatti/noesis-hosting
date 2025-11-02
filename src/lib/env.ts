@@ -20,6 +20,8 @@ type RawEnv = {
   DEFAULT_RUNTIME_CPU_PERCENT?: string;
   DEFAULT_RUNTIME_MEMORY_MB?: string;
   DEFAULT_RUNTIME_PROCESS_LIMIT?: string;
+  IPINFO_TOKEN?: string;
+  IPINFO_CACHE_TTL_MINUTES?: string;
 };
 
 const envSchema = z.object({
@@ -47,6 +49,8 @@ const envSchema = z.object({
   DEFAULT_RUNTIME_CPU_PERCENT: z.coerce.number().min(5).max(100).default(25),
   DEFAULT_RUNTIME_MEMORY_MB: z.coerce.number().min(128).max(2048).default(256),
   DEFAULT_RUNTIME_PROCESS_LIMIT: z.coerce.number().min(2).max(64).default(12),
+  IPINFO_TOKEN: z.string().min(1).optional(),
+  IPINFO_CACHE_TTL_MINUTES: z.coerce.number().min(15).max(10080).default(720),
 });
 
 export const env = envSchema.parse(process.env as RawEnv);
@@ -64,3 +68,5 @@ export const PHP_FPM_SERVICE = env.PLATFORM_PHP_FPM_SERVICE;
 export const DEFAULT_CPU_PERCENT = env.DEFAULT_RUNTIME_CPU_PERCENT;
 export const DEFAULT_MEMORY_LIMIT_MB = env.DEFAULT_RUNTIME_MEMORY_MB;
 export const DEFAULT_PROCESS_LIMIT = env.DEFAULT_RUNTIME_PROCESS_LIMIT;
+export const IPINFO_TOKEN = env.IPINFO_TOKEN ?? null;
+export const IPINFO_CACHE_TTL_MS = env.IPINFO_CACHE_TTL_MINUTES * 60 * 1000;

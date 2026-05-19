@@ -7,117 +7,115 @@ import {
   Sparkles,
   ShieldCheck,
   Globe2,
-  HeartHandshake,
   Server,
   CloudLightning,
-  HeartPulse,
   LineChart,
 } from "lucide-react";
 
 const heroHighlights = [
-  "Powered by the Noesis AI non-profit foundation",
-  "Automatic TLS, antivirus, and sandboxed runtimes on every deploy",
-  "Bring your own domain or use our free *.hosting.noesisai.org subdomains",
+  "Self-host the control plane on your own infrastructure",
+  "Automated TLS, antivirus scanning, DNS checks, and runtime profiles",
+  "Rebrand it, extend it, and build your own hosting service from here",
 ];
 
 const headlineStats = [
-  { value: "0€", label: "Platform fees — permanently" },
-  { value: "150 MB", label: "Per deployment bundle size" },
-  { value: "Global edge", label: "PoPs optimised for research traffic" },
+  { value: "150 MB", label: "Default deployment bundle size" },
+  { value: "3 runtimes", label: "Static, SPA, and PHP profiles" },
+  { value: "DNS + TLS", label: "Cloudflare and ACME-ready workflows" },
 ];
 
 const featureColumns = [
   {
-    title: "Foundation-grade reliability",
+    title: "Hosting-grade reliability",
     description:
-      "Every archive is scanned by ClamAV, isolated in its own runtime, and served behind a battle-tested nginx + php-fpm stack. Compliance for public-good projects without enterprise contracts.",
+      "Every archive can be scanned by ClamAV, analyzed before activation, and served through an nginx-first deployment pipeline designed for real hosting operations.",
     icon: ShieldCheck,
   },
   {
-    title: "Worldwide reach in seconds",
+    title: "Domain workflows built in",
     description:
-      "Upload, verify, and publish in minutes. Our orchestration layer propagates DNS, ships TLS, and warms caches automatically so your announcement can reach classrooms, labs, and citizens anywhere.",
+      "Create managed subdomains, connect custom hostnames, check DNS propagation, and plug into Cloudflare automation when your platform is ready to operate at scale.",
     icon: Globe2,
   },
   {
-    title: "Transparent donor-backed model",
+    title: "A product shell you can own",
     description:
-      "The infrastructure is sustained entirely by philanthropic donations and optional domain purchases. No upsells, no premium tiers — just open access for builders furthering collective intelligence.",
-    icon: HeartHandshake,
+      "Use the codebase as the base for your own hosting brand. Change the landing page, add pricing, wire billing, tune quotas, and shape the product around your market.",
+    icon: Sparkles,
   },
   {
-    title: "Designed for humans, not tickets",
+    title: "Designed for operators",
     description:
-      "A focused control centre for launches, rollbacks, domain requests, and security toggles. Thoughtful defaults, delightful animations, and documentation embedded where you need it.",
-    icon: Sparkles,
+      "A focused control centre for deployments, site status, domain requests, security toggles, and admin metrics, with the primitives needed to run a hosting platform.",
+    icon: Server,
   },
 ];
 
 const sustainabilityPillars = [
   {
-    title: "Philanthropic backbone",
+    title: "Self-hosted by design",
     copy:
-      "Private donors and research grants cover compute, bandwidth, and security reviews so independent teams never face a bill.",
-    icon: HeartPulse,
+      "Noesis Hosting is not currently operated as a public hosted service. You deploy it on your own server and decide the rules, branding, domains, and roadmap.",
+    icon: Server,
   },
   {
-    title: "Optional domain commerce",
+    title: "Infrastructure hooks included",
     copy:
-      "Need a custom domain? Purchase directly through Noesis and we reinvest every margin into infrastructure operations.",
+      "The codebase already contains practical hooks for nginx, Cloudflare DNS, ACME certificates, ClamAV scanning, PostgreSQL persistence, and PM2 deployment.",
     icon: LineChart,
   },
   {
-    title: "Open impact reporting",
+    title: "Built to become a business",
     copy:
-      "Quarterly transparency reports publish usage stats, costs, carbon accounting, and community milestones.",
-    icon: Server,
+      "Start from a polished technical base, then add billing, teams, quotas, plans, logs, object storage, Git deployments, or any vertical feature your hosting product needs.",
+    icon: Sparkles,
   },
 ];
 
 const workflow = [
   {
-    title: "Create your foundation account",
+    title: "Clone and configure",
     details: [
-      "Sign up securely with email — no credit card, no hidden tiers.",
-      "Instant access to the control centre with guided onboarding.",
+      "Point the app at your PostgreSQL database and set the domain, upload, DNS, certificate, and security environment variables.",
+      "Run migrations and start the Next.js application locally or behind your reverse proxy.",
     ],
   },
   {
-    title: "Deploy with confidence",
+    title: "Wire the hosting stack",
     details: [
-      "Upload a zipped build or integrate the upcoming CLI to automate.",
-      "We scan, extract, and provision a hardened runtime automatically.",
+      "Connect nginx snippets, upload directories, ClamAV, Cloudflare credentials, and optional ACME wildcard certificates.",
+      "Tune runtime limits, archive size, security defaults, and domain behavior for your own infrastructure.",
     ],
   },
   {
-    title: "Map domains & share your work",
+    title: "Launch your platform",
     details: [
-      "Link existing domains or request a purchase through the foundation.",
-      "Monitor performance, security scans, and DNS propagation in one place.",
+      "Rebrand the interface, invite users, create sites, upload bundles, and monitor deployments from the dashboard.",
+      "Extend the product with billing, teams, CLI deploys, logs, or managed plans when you are ready.",
     ],
   },
 ];
 
 const faqs = [
   {
-    question: "Is the platform really free forever?",
+    question: "Is Noesis Hosting currently available as a hosted public service?",
     answer:
-      "Yes. Noesis Hosting is maintained by the Noesis AI Foundation as a public-good infrastructure project. Operational costs are covered by philanthropic funding, research partnerships, and optional add-ons such as domain purchases.",
+      "No. This repository is currently provided as a self-hostable project. You can deploy it on your own infrastructure and adapt it into your own hosting service.",
   },
   {
     question: "What can I deploy?",
     answer:
-      "Static sites, documentation portals, lightweight PHP applications, and experimental front-ends. Every deployment must include an index.html or index.php entry point and remain within the 150 MB bundle limit to keep the edge responsive.",
+      "Static sites, documentation portals, SPA-style front ends, and lightweight PHP applications. Deployments are ZIP archives and should include an index.html, index.htm, or index.php entry point.",
   },
   {
-    question: "Can organisations with higher traffic use the platform?",
+    question: "Can I use this to build a commercial hosting product?",
     answer:
-      "Absolutely. The zero-cost tier covers a generous baseline. If you require custom bandwidth, private regions, or compliance reviews, contact the foundation to co-design an appropriate donation-backed runway.",
+      "Yes. The project is MIT licensed, so you can rebrand it, modify it, add billing, change quotas, and build a service around it, subject to the license terms.",
   },
   {
-    question: "How does Noesis ensure security?",
+    question: "What infrastructure do I need?",
     answer:
-      "All uploads are scanned by ClamAV, served from isolated php-fpm pools, and delivered via hardened nginx blueprints. HTTPS is enforced by default, and you can enable access logs, CORS policies, or basic auth per site.",
+      "You need a Node.js runtime, PostgreSQL, writable upload directories, nginx integration, and optional Cloudflare, ACME, ClamAV, PHP-FPM, and ipinfo credentials depending on which features you enable.",
   },
 ];
 
@@ -145,18 +143,16 @@ export default function LandingPage() {
         <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center text-center space-y-10">
           <span className="floating-tagline">
             <Sparkles className="h-4 w-4 text-indigo-300" />
-            Noesis AI Foundation · Public Infrastructure
+            Self-hostable hosting platform starter
           </span>
           <div className="space-y-6">
             <h1 className="text-balance text-4xl font-semibold leading-tight text-foreground md:text-6xl">
-              The open web edge powering everyone from classrooms to civic labs — free, secure, and
-              beautifully simple.
+              Build your own hosting platform with a polished control plane from day one.
             </h1>
             <p className="text-lg text-slate-300 md:text-xl">
-              We built Noesis Hosting so that any mission-driven team can launch modern web
-              experiences without touching invoices or compromising on reliability. Your work stays
-              accessible, resilient, and ethically operated under the umbrella of a global
-              non-profit.
+              Noesis Hosting packages site management, ZIP deployments, DNS workflows, security
+              controls, runtime profiles, and admin analytics into a product-ready web app you can
+              self-host, rebrand, and evolve into your own hosting service.
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-4">
@@ -196,12 +192,12 @@ export default function LandingPage() {
             Why builders choose Noesis
           </span>
           <h2 className="text-3xl font-semibold md:text-4xl">
-            Production discipline, philanthropic heart.
+            Product polish with infrastructure instincts.
           </h2>
           <p className="text-base text-slate-300 md:text-lg">
-            Whether you are documenting open-source breakthroughs, hosting an AI literacy portal, or
-            launching a civic app, you receive foundation-backed infrastructure engineered to keep
-            your message online — no sales calls, no friction.
+            Whether you are prototyping a niche PaaS, building an internal deployment portal, or
+            studying how hosting systems fit together, Noesis Hosting gives you the full-stack
+            starting point: interface, database, automation hooks, and operational defaults.
           </p>
         </div>
         <div className="mt-12 grid gap-6 md:grid-cols-2">
@@ -225,30 +221,24 @@ export default function LandingPage() {
         <div className="grid gap-12 md:grid-cols-[3fr,2fr] md:items-start">
           <div className="space-y-6">
             <span className="badge-label">
-              <HeartHandshake className="h-3.5 w-3.5 text-rose-300" />
-              Our sustainability promise
+              <Server className="h-3.5 w-3.5 text-cyan-300" />
+              Self-hosting promise
             </span>
             <h2 className="text-3xl font-semibold md:text-4xl">
-              Free access for every mission. Transparent funding for every kilobyte.
+              Your infrastructure, your brand, your hosting roadmap.
             </h2>
             <p className="text-base leading-relaxed text-slate-300">
-              Noesis Hosting is sustained by generosity, not subscription funnels. The foundation
-              underwrites compute and security so educators, NGOs, researchers, and curious makers
-              can publish knowledge openly. When you thrive, more people learn, and society gets
-              smarter.
+              This project is not currently operated as a public hosted service. It is a strong
+              technical base for founders, students, and builders who want to launch their own
+              hosting experience and adapt every layer to their users.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link href="mailto:foundation@noesisai.org" className="cta-button secondary">
-                Talk with the foundation
-              </Link>
-              <Link
-                href="https://noesis.ai/donate"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="cta-button primary"
-              >
-                Make a donation
+              <Link href="/signup" className="cta-button primary">
+                Try the dashboard
                 <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link href="/login" className="cta-button secondary">
+                Enter control centre
               </Link>
             </div>
           </div>
@@ -277,9 +267,8 @@ export default function LandingPage() {
           </span>
           <h2 className="text-3xl font-semibold md:text-4xl">Three deliberate steps to the live edge.</h2>
           <p className="text-base text-slate-300">
-            Our workflow is intentionally opinionated so you can move fast without sacrificing
-            resilience. Every step comes with inline guidance, pre-flight validation, and
-            troubleshooting tips curated by the foundation&apos;s operations team.
+            The workflow is intentionally opinionated so you can move from source code to a working
+            hosting control plane without designing every primitive from scratch.
           </p>
         </div>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
@@ -310,12 +299,8 @@ export default function LandingPage() {
           </span>
           <h2 className="text-3xl font-semibold md:text-4xl">Frequently asked by the community.</h2>
           <p className="text-base text-slate-300">
-            Still unsure whether you can rely on a philanthropic edge? Explore our most requested
-            answers or write to the foundation at{" "}
-            <Link href="mailto:foundation@noesisai.org" className="underline decoration-indigo-400 underline-offset-4">
-              foundation@noesisai.org
-            </Link>
-            .
+            The short version: Noesis Hosting is a self-hostable codebase for building your own
+            hosting platform, not a currently operated public hosting service.
           </p>
         </div>
         <div className="mt-10 grid gap-4">
@@ -336,16 +321,16 @@ export default function LandingPage() {
       <section className="section-panel">
         <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
           <span className="badge-label">
-            <HeartHandshake className="h-3.5 w-3.5 text-rose-300" />
-            Join the movement
+            <CloudLightning className="h-3.5 w-3.5 text-teal-300" />
+            Build from here
           </span>
           <h2 className="text-3xl font-semibold md:text-4xl">
-            Your ideas deserve resilient infrastructure. Noesis keeps the lights on for everyone.
+            Turn the codebase into the hosting product you want to launch.
           </h2>
           <p className="text-base text-slate-300 md:text-lg">
-            Deploy now, iterate in public, and invite others to build with you. When you are ready to
-            give back, contribute a domain purchase or a donation and we will pay it forward to the
-            next wave of builders.
+            Start with the included dashboard, deployment pipeline, DNS hooks, analytics model, and
+            security controls. Then add the commercial, operational, and brand layers that make the
+            platform yours.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link href="/signup" className="cta-button primary">
@@ -353,10 +338,10 @@ export default function LandingPage() {
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              href="mailto:partnerships@noesisai.org"
+              href="/login"
               className="cta-button secondary"
             >
-              Partnership enquiries
+              Open control centre
             </Link>
           </div>
         </div>

@@ -9,7 +9,7 @@ const sections = [
   {
     title: "1. Data Controller",
     body:
-      "Noesis AI, Via Torino 4, 20100 Milan, Italy, acts as the data controller for the Noesis Hosting platform.",
+      "Noesis Hosting is self-hostable software. If you operate an instance, you should replace this section with the legal identity and contact details of your own data controller.",
   },
   {
     title: "2. Data We Collect",
@@ -29,12 +29,12 @@ const sections = [
   {
     title: "5. Subprocessors",
     body:
-      "We rely on Cloudflare for traffic proxying and TLS termination. PostgreSQL databases are hosted on our managed infrastructure in the EU. Additional subprocessors will be documented in the dashboard.",
+      "A typical instance may rely on Cloudflare for DNS or traffic proxying and PostgreSQL for persistence. Document your actual subprocessors, regions, and infrastructure providers before launching a public service.",
   },
   {
     title: "6. Your Rights",
     body:
-      "You may request access, correction, deletion, or export of your personal data by emailing privacy@noesisai.org. We will respond within 30 days.",
+      "Operators should define how users can request access, correction, deletion, or export of personal data, and should state the response timeline required by their jurisdiction.",
   },
   {
     title: "7. Security",
@@ -54,7 +54,7 @@ const sections = [
   {
     title: "10. Contact",
     body:
-      "Reach us at privacy@noesisai.org with the subject line “Noesis Hosting Privacy”.",
+      "Replace this section with the privacy contact address for your own hosting service before operating a public instance.",
   },
 ];
 

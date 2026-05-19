@@ -9,7 +9,7 @@ const sections = [
   {
     title: "1. Introduction",
     body:
-      "Noesis Hosting is a service operated by Noesis AI, a non-profit research organization based in Milan, Italy. By creating an account or uploading content, you agree to these Terms of Use.",
+      "Noesis Hosting is a self-hostable hosting-platform web application. If you operate an instance, you are responsible for adapting these Terms of Use to your own service, jurisdiction, and business model.",
   },
   {
     title: "2. Eligibility",
@@ -19,7 +19,7 @@ const sections = [
   {
     title: "3. Acceptable Use",
     body:
-      "Host only static assets you are legally allowed to distribute. Malicious code, unauthorized data collection, or content that violates applicable laws, the Noesis AI License Agreement, or Cloudflare policies is strictly prohibited.",
+      "Host only assets you are legally allowed to distribute. Malicious code, unauthorized data collection, or content that violates applicable laws, your platform policies, or your infrastructure provider policies should be prohibited.",
   },
   {
     title: "4. Uploads & Antivirus",
@@ -29,12 +29,12 @@ const sections = [
   {
     title: "5. Domains",
     body:
-      "You are responsible for configuring DNS records for any custom domain you map. Free staging subdomains under hosting.noesisai.org are provided on a best-effort basis and may be reclaimed if inactive for 90 days.",
+      "Users are responsible for configuring DNS records for any custom domain they map. If you offer staging subdomains, define the base domain, inactivity rules, and reclamation policy for your own instance.",
   },
   {
     title: "6. Service Level",
     body:
-      "Noesis Hosting is provided “as is”. We strive for high availability but do not offer formal SLAs. Planned maintenance will be announced ahead of time whenever possible.",
+      "Noesis Hosting is provided as source code under the project license. Each operator is responsible for defining availability, support, and maintenance commitments for their own hosted instance.",
   },
   {
     title: "7. Data & Logs",
@@ -44,7 +44,7 @@ const sections = [
   {
     title: "8. Suspension & Termination",
     body:
-      "We reserve the right to suspend or terminate accounts that violate these Terms, applicable laws, or the ethical standards of the Noesis AI project.",
+      "Operators should reserve the right to suspend or terminate accounts that violate their Terms, applicable laws, or platform safety policies.",
   },
   {
     title: "9. Changes",
@@ -54,7 +54,7 @@ const sections = [
   {
     title: "10. Contact",
     body:
-      "Questions can be sent to info@noesisai.org with the subject line “Noesis Hosting Terms”.",
+      "Replace this section with the legal contact address for your own hosting service before operating a public instance.",
   },
 ];
 
